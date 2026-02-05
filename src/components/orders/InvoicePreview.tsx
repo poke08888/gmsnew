@@ -1,0 +1,198 @@
+import { component$, isBrowser, useComputed$, useSignal, useVisibleTask$ } from "@builder.io/qwik";
+import { $ } from "@builder.io/qwik";
+import { LuX as X } from "@qwikest/icons/lucide";
+import { InterfaceOrder } from "~/types/common";
+
+import { GetBillingById } from "~/services/billing.service";
+import { server$ } from "@builder.io/qwik-city";
+interface Props {
+    orderAction: { order: InterfaceOrder | null, action: string };
+}
+
+const getBilling = server$(async (billingId: string) => {
+    // console.log('Fetching billing for ID:', billingId);
+    const billing = await GetBillingById(billingId);
+    // console.log('Fetched billing:', billing);
+    return billing;
+});
+
+export default component$(({ orderAction }: Props) => {
+    
+    
+    
+
+    const getInvoiceHTML = useComputed$(() => {
+        const order = orderAction.order;
+        if (!order) return '';
+        const fmtMoney = (amount: number) => new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(amount);
+        const fmtNum = (num: number) => new Intl.NumberFormat('vi-VN').format(num);
+        const formatDate = (dateStr: string) => {
+            if(!dateStr) return '';
+            const d = new Date(dateStr);
+            return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
+        }
+
+        const VAT_RATE = 0.08;
+
+        const totalPreTax = order.totalNetPrice || 0;
+        const totalAmount = order.totalGrossPrice || 0;
+        const totalVAT = totalAmount - totalPreTax;
+
+        // console.log('Billing info:', billing);
+        return `
+    <div id="invoice-content" style="padding: 40px; font-family: 'Inter', sans-serif; color: #111827; max-width: 900px; margin: 0 auto; background: white; font-size: 13px;">
+      
+      <!-- HEADER: Company Info -->
+      <div style="border-bottom: 2px solid #4f46e5; padding-bottom: 20px; margin-bottom: 20px;">
+        <h1 style="font-size: 24px; font-weight: 800; color: #4f46e5; margin: 0 0 10px 0; text-transform: uppercase;">Công Ty TNHH GLOWME</h1>
+        <div style="display: flex; justify-content: space-between;">
+           <div style="width: 65%;">
+             <p style="margin: 3px 0;"><strong>Mã số thuế:</strong> 2803127857</p>
+             <p style="margin: 3px 0;"><strong>Địa chỉ Thuế:</strong> Số nhà 35, đường Ngô Quyền, khu phố 5, Phường Bỉm Sơn, Tỉnh Thanh Hóa, Việt Nam</p>
+             <p style="margin: 3px 0;"><strong>Email:</strong> sale@glowme.vn</p>
+             <p style="margin: 3px 0;"><strong>Tổng đài hỗ trợ:</strong> 1900 4628</p>
+           </div>
+           <div style="width: 30%; text-align: right;">
+             <p style="margin: 3px 0; font-size: 16px; font-weight: bold; color: #dc2626;">PHIẾU ĐẶT HÀNG</p>
+             <p style="margin: 3px 0; color: #6b7280;">Mã đơn: #${order._id}</p>
+             <p style="margin: 3px 0; color: #6b7280;">Ngày đặt: ${formatDate(order.orderDate.toDateString())}</p>
+           </div>
+        </div>
+      </div>
+      
+      <!-- PARTNER INFO -->
+      <div style="display:flex; gap: 20px; margin-bottom: 25px;">
+          <!-- Left: General Partner Info -->
+          <div style="flex: 1; background-color: #f9fafb; padding: 15px; border-radius: 8px;">
+            <h3 style="font-size: 14px; text-transform: uppercase; color: #4f46e5; font-weight: 700; margin: 0 0 10px 0;">Thông tin đối tác</h3>
+            <p style="margin: 4px 0;"><strong>Nhà phân phối:</strong> ${order.partnerId?.name}</p>
+            <p style="margin: 4px 0;"><strong>Thương hiệu:</strong> ${order.brandId?.name}</p>
+            <p style="margin: 4px 0;"><strong>Địa chỉ giao hàng:</strong> ${order.warehouseId?.name || 'Chưa cập nhật'}</p>
+            <p style="margin: 4px 0;"><strong>Người nhận:</strong> ${order.warehouseId?.contactName || '---'} ${order.warehouseId?.contactPhone ? `- ${order.warehouseId?.contactPhone}` : ''}</p>
+          </div>
+
+          <!-- Right: Billing Info (Thông tin xuất hóa đơn) -->
+          <div style="flex: 1; background-color: #f9fafb; padding: 15px; border-radius: 8px;">
+            <h3 style="font-size: 14px; text-transform: uppercase; color: #4f46e5; font-weight: 700; margin: 0 0 10px 0;">Thông tin xuất hóa đơn</h3>
+            ${order.billingId ? `
+                <p style="margin: 4px 0;"><strong>Tên đơn vị:</strong> ${order.billingId?.name}</p>
+                <p style="margin: 4px 0;"><strong>MST:</strong> ${order.billingId?.taxNumber}</p>
+                <p style="margin: 4px 0;"><strong>Địa chỉ:</strong> ${order.billingId?.location}</p>
+            ` : `
+                <p style="margin: 4px 0; color: #6b7280; font-style: italic;">Không có thông tin hóa đơn được chọn.</p>
+            `}
+          </div>
+      </div>
+
+      <!-- ORDER TABLE -->
+      <table style="width: 100%; border-collapse: collapse; margin-bottom: 20px;">
+        <thead>
+          <tr style="background-color: #4f46e5; color: white;">
+            <th style="padding: 10px; text-align: left; border: 1px solid #4f46e5;">SKU</th>
+            <th style="padding: 10px; text-align: left; border: 1px solid #4f46e5;">Tên sản phẩm</th>
+            <th style="padding: 10px; text-align: right; border: 1px solid #4f46e5;">SL</th>
+            <th style="padding: 10px; text-align: right; border: 1px solid #e5e7eb; color: #e5e7eb;">Giá niêm yết</th>
+            <th style="padding: 10px; text-align: right; border: 1px solid #4f46e5;">ĐG Trước Thuế<br><span style="font-weight:400; font-size: 10px;">(Sau CK)</span></th>
+            <th style="padding: 10px; text-align: right; border: 1px solid #4f46e5;">ĐG Sau Thuế<br><span style="font-weight:400; font-size: 10px;">(VAT 8%)</span></th>
+            <th style="padding: 10px; text-align: right; border: 1px solid #4f46e5;">Thành tiền</th>
+          </tr>
+        </thead>
+        <tbody>
+          ${order.items.map((item) => {
+            const pricePreTax = item.netprice;
+            const pricePostTax = item.grossprice;
+            const lineTotal = item.qty * pricePostTax;
+            
+            return `
+            <tr style="border-bottom: 1px solid #e5e7eb;">
+              <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: 500;">${item.sku}</td>
+              <td style="padding: 10px; border: 1px solid #e5e7eb; font-weight: 500;">${item.name}</td>
+              <td style="padding: 10px; text-align: right; border: 1px solid #e5e7eb;">${item.qty}</td>
+              <td style="padding: 10px; text-align: right; border: 1px solid #e5e7eb; color: #6b7280;">${fmtNum(item.listprice)}</td>
+              <td style="padding: 10px; text-align: right; border: 1px solid #e5e7eb;">${fmtNum(pricePreTax)}</td>
+              <td style="padding: 10px; text-align: right; border: 1px solid #e5e7eb;">${fmtNum(pricePostTax)}</td>
+              <td style="padding: 10px; text-align: right; border: 1px solid #e5e7eb; font-weight: 600;">
+                ${fmtNum(lineTotal)}
+              </td>
+            </tr>
+            `;
+          }).join('')}
+        </tbody>
+        <tfoot>
+           <tr>
+             <td colspan="6" style="padding: 8px 10px; text-align: right; font-weight: normal; color: #6b7280;">Tổng tiền trước thuế:</td>
+             <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${fmtMoney(totalPreTax)}</td>
+           </tr>
+           <tr>
+             <td colspan="6" style="padding: 8px 10px; text-align: right; font-weight: normal; color: #6b7280;">Thuế GTGT (VAT 8%):</td>
+             <td style="padding: 8px 10px; text-align: right; font-weight: 600;">${fmtMoney(totalVAT)}</td>
+           </tr>
+          <tr style="background-color: #eff6ff;">
+            <td colspan="6" style="padding: 12px 10px; text-align: right; font-weight: 800; color: #4f46e5; text-transform: uppercase;">TỔNG THANH TOÁN:</td>
+            <td style="padding: 12px 10px; text-align: right; font-weight: 800; color: #4f46e5; font-size: 16px;">
+              ${fmtMoney(totalAmount)}
+            </td>
+          </tr>
+        </tfoot>
+      </table>
+
+      <!-- SIGNATURES -->
+      <div style="display: flex; justify-content: space-between; margin-top: 40px; page-break-inside: avoid;">
+         <div style="text-align: center; width: 30%;">
+            <p style="font-weight: 600; margin-bottom: 50px;">Người lập phiếu</p>
+            <p style="font-size: 12px; font-style: italic;">(Ký, họ tên)</p>
+         </div>
+         <div style="text-align: center; width: 30%;">
+            <p style="font-weight: 600; margin-bottom: 50px;">Người giao hàng</p>
+            <p style="font-size: 12px; font-style: italic;">(Ký, họ tên)</p>
+         </div>
+         <div style="text-align: center; width: 30%;">
+            <p style="font-weight: 600; margin-bottom: 50px;">Khách hàng</p>
+            <p style="font-size: 12px; font-style: italic;">(Ký, họ tên)</p>
+         </div>
+      </div>
+
+      <div style="margin-top: 30px; text-align: center; font-size: 11px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 10px;">
+        <p>Cảm ơn quý khách đã tin tưởng và hợp tác cùng GLOWME!</p>
+      </div>
+    </div>
+  `
+    })
+    const generatePDF = $(async () => {
+        if (!isBrowser) return;
+        const html2pdf = (await import('html2pdf.js')).default;
+        const element = document.createElement('div');
+        element.innerHTML = getInvoiceHTML.value;
+
+        const opt = {
+            margin: 10,
+            filename: `GlowMe_Don_hang_${orderAction.order?._id}.pdf`,
+            image: { type: 'png', quality: 0.98 },
+            html2canvas: { scale: 2, useCORS: true },
+            jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' }
+        };
+
+        if (html2pdf) {
+            await html2pdf().set(opt as any).from(element).save();
+        } else {
+            alert("Hệ thống tạo PDF đang khởi động. Vui lòng thử lại sau giây lát.");
+        }
+    });
+
+    return (
+        <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
+            <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
+                <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">Hóa Đơn: {orderAction.order?._id}</h3>
+                    <div class="flex items-center gap-2">
+                        <button onClick$={generatePDF} class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm">Tải PDF</button>
+                        <button onClick$={() => {orderAction.action = ''; orderAction.order = null}} class="text-gray-500 p-1.5 rounded-lg"><X class="w-5 h-5" /></button>
+                    </div>
+                </div>
+                <div class="flex-1 overflow-auto bg-gray-100 p-4">
+                    <div class="shadow-lg mx-auto" dangerouslySetInnerHTML={getInvoiceHTML.value}></div>
+                </div>
+            </div>
+        </div>
+    )
+})

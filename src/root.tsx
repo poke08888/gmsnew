@@ -1,6 +1,7 @@
 import { component$, isDev } from "@builder.io/qwik";
 import { QwikCityProvider, RouterOutlet } from "@builder.io/qwik-city";
 import { RouterHead } from "./components/router-head/router-head";
+import 'dotenv/config';
 
 import "./global.css";
 
@@ -22,6 +23,7 @@ export default component$(() => {
             href={`${import.meta.env.BASE_URL}manifest.json`}
           />
         )}
+        <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap" rel="stylesheet"></link>
         <RouterHead />
       </head>
       <body lang="en">
