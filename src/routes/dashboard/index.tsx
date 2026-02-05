@@ -4,7 +4,7 @@ import { routeLoader$, server$, type DocumentHead } from "@builder.io/qwik-city"
 import Header from "~/components/dashboard/Header";
 import GlobalStats from "~/components/dashboard/GlobalStats";
 import { Brand } from "~/models/brand.model";
-import { EnumUserCustomPermission, EnumUserRole } from "~/types/common";
+import { EnumKPIType, EnumUserCustomPermission, EnumUserRole } from "~/types/common";
 import { verifyJWT } from "~/services/hash.service";
 import { Partner } from "~/models/partner.model";
 import { Order } from "~/models/order.model";
@@ -70,9 +70,97 @@ const useGlobalStats = server$(async function (timeRangeType: string, brand: str
     endOrderDate = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59, 999).toISOString();
   }
 
+  const channelStats = await Order.aggregate([
+    { $match: {
+      $expr: {
+        $and: [
+          { $gte: ["$orderDate", new Date(startOrderDate)] },
+          { $lte: ["$orderDate", new Date(endOrderDate)] },
+          { $cond: [
+            { $eq: [brand, 'all'] },
+            true,
+            { $eq: ["$brandId", brand] }
+          ]},
+          { $or: [
+            { $eq: [isAdmin, true] },
+            { $in: ["$partnerId", partners] },
+            { $in: ["$brandId", user.assignedBrands]},
+          ]}
+          
+        ]
+      }
+    }},
+    { $lookup: {
+      from: "partners",
+      localField: "partnerId",
+      foreignField: "_id",
+      as: "partner"
+    }},
+    { $unwind: "$partner" },
+    { $lookup: {
+      from: 'channels',
+      localField: 'partner.channelId',
+      foreignField: '_id',
+      as: 'channel'
+    }},
+    { $unwind: "$channel" },
+    { $addFields: {
+      totalNetRevenue: {
+        $sum: {
+          $map: {
+            input: "$items",
+            as: "items",
+            in: { $sum: { $multiply: ["$$items.netprice", "$$items.qty"] }}
+          }
+        }
+      },
+      totalQty: {
+        $sum: {
+          $map: {
+            input: "$items",
+            as: "items",
+            in: { $sum: "$$items.qty"}
+          }
+        }
+      }
+    }},
+    { $group: {
+      _id: "$channel._id",
+      channelName: { $first: "$channel.name" },
+      totalOrders: { $sum: 1 },
+      totalNetRevenue: { $sum: "$totalNetRevenue" },
+      totalQty: { $sum: "$totalQty" }
+    }},
+    { $project: {
+      _id: 1,
+      channelId: "$_id",
+      channelName: 1,
+      totalOrders: 1,
+      totalNetRevenue: 1,
+      totalQty: 1
+    }},
+    { $lookup: {
+      from: 'kpis',
+      let: {channelId: '$_id'},
+      pipeline: [
+        { $match: {
+          $expr: {
+            $and: [
+              { $eq: ['$type', EnumKPIType.CHANNEL]},
+              { $eq: ['$targetId', '$$channelId'] },
+              // { $gte: ['$timeframe', startOrderDate.slice(0,7) ] },
+              // { $lte: ['$timeframe', endOrderDate.slice(0,7) ] },
+            ]
+          }
+        }}
+      ],
+      as: 'kpis'
+    }}
+  ])
+  console.log("channelStats", JSON.stringify(channelStats, null, 2));
 
 
-  const orders = (await Order.aggregate([
+  const summaryStats = (await Order.aggregate([
     { $match: {
       $expr: {
         $and: [
@@ -124,14 +212,14 @@ const useGlobalStats = server$(async function (timeRangeType: string, brand: str
 
   ]))[0] || { totalOrders: 0, totalListRevenue: 0, totalNetRevenue: 0 };
   // console.log("partners", orders);
-  return { success: true, data: {...orders, totalPartners: partners.length} };
+  return { success: true, data: {totalOrders: summaryStats.totalOrders, totalListRevenue: summaryStats.totalListRevenue, totalNetRevenue: summaryStats.totalNetRevenue, totalPartners: partners.length} };
 
 })
 
 export default component$(() => {
   const brands = useBrands();
   const filter = useStore({ brand: 'all', timeRangeType: 'today', startDate: '', endDate: '' });
-  const stats = useSignal<any>(null);
+  const stats = useSignal<any>({ totalOrders: 0, totalListRevenue: 0, totalNetRevenue: 0, totalPartners: 0 });
   useTask$(async ({track, cleanup}) => {
     track(() => [filter.brand, filter.timeRangeType, filter.startDate, filter.endDate]);
     
@@ -141,7 +229,7 @@ export default component$(() => {
         stats.value = res.data;
       }
     }
-    
+
     const id = setTimeout(async () => {
       const res = await useGlobalStats(filter.timeRangeType, filter.brand, filter.startDate, filter.endDate);
       if (res.success) {
