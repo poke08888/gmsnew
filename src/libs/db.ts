@@ -11,7 +11,7 @@ import '../models/order.model';
 import '../models/product.model';
 
 const MONGODB_URI = process.env.MONGODB_URI || 'mongodb://localhost:27017/gms';
-
+console.log('MONGODB_URI', MONGODB_URI);
 let cached = (global as any).mongoose;
 
 if (!cached) {
