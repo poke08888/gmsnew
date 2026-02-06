@@ -1,8 +1,10 @@
 import { LuLayoutDashboard as LayoutDashboard, LuUpload as Upload, LuSettings as Settings, LuPieChart as PieChart, LuUsers as Users, LuFileText as FileText, LuPackage as Package, LuLogOut as LogOut, LuShield as Shield } from '@qwikest/icons/lucide';
 
-import { component$, $ } from '@builder.io/qwik';
-import { Link, routeLoader$, server$, useLocation } from '@builder.io/qwik-city';
+import { component$ } from '@builder.io/qwik';
+import { Link, useLocation } from '@builder.io/qwik-city';
 import { EnumUserCustomPermission, EnumUserRole } from '~/types/common';
+
+import { handleLogout } from '~/routes/dashboard/layout';
 // const isActive = (path: string) => {
 //     if (path === '/' && location.pathname !== '/') return 'text-indigo-100 hover:bg-indigo-800 hover:text-white';
 //     return location.pathname.startsWith(path) ? 'bg-indigo-800 text-white' : 'text-indigo-100 hover:bg-indigo-800 hover:text-white';
@@ -15,6 +17,7 @@ interface Props {
 
 export const Sidebar = component$(({ currentUser }: Props) => {
     // console.log(currentUser);
+    const handleLogoutAction = handleLogout()
     const location = useLocation();
     const isActive = (path: string) => {
         if (path === '/' && location.url.pathname !== '/') return 'text-indigo-100 hover:bg-indigo-800 hover:text-white';
@@ -98,13 +101,15 @@ export const Sidebar = component$(({ currentUser }: Props) => {
           <LogOut class="h-4 w-4" />
           Đăng xuất
         </button> */}
-        <Link 
-            href="/logout"
+        <button 
+            onClick$={async () => {
+              await handleLogoutAction.submit()
+            }}
             class="w-full flex items-center justify-center gap-2 py-2.5 px-3 bg-indigo-800 hover:bg-red-600 rounded-xl transition-all text-sm font-bold border border-indigo-700 hover:border-red-500 shadow-sm cursor-pointer"
         >
             <LogOut class="h-4 w-4" />
             Đăng xuất
-        </Link>
+        </button>
       </div>
     </div>
   );

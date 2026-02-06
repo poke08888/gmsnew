@@ -80,14 +80,14 @@ const useProducts = server$(async function (text: string = '', startDate: string
                             $cond: [
                                 { $eq: [startDate, ""] },
                                 true,
-                                { $gte: ["$deliveryDate", new Date(startDate)] }
+                                { $gte: ["$orderDate", new Date(startDate)] }
                             ]
                         },
                         { // end delivery date filter
                             $cond: [
                                 { $eq: [endDate, ""] },
                                 true,
-                                { $lte: ["$deliveryDate", new Date(endDate)] }
+                                { $lte: ["$orderDate", new Date(endDate)] }
                             ]
                         }
                     ]

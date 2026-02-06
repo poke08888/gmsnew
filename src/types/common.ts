@@ -85,13 +85,13 @@ export interface InterfaceOrderItem {
 
 export interface InterfaceOrder {
     _id?: string;
-    userId?: InterfaceUser;
-    partnerId: InterfacePartner;
-    warehouseId: InterfaceWarehouse;
+    userId?: InterfaceUser | string;
+    partnerId: InterfacePartner | string;
+    warehouseId: InterfaceWarehouse | null | string;
     totalNetPrice?: number;
     totalGrossPrice?: number;
-    billingId: InterfaceBilling;
-    brandId: InterfaceBrand;
+    billingId: InterfaceBilling | null | string;
+    brandId: InterfaceBrand | null | string;
     orderDate: Date;
     deliveryDate: Date;
     items: InterfaceOrderItem[];

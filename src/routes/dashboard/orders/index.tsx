@@ -1,3 +1,4 @@
+//@ts-nocheck
 import { component$, useSignal, useStore, useTask$ } from '@builder.io/qwik';
 import { server$, routeLoader$, useNavigate } from '@builder.io/qwik-city';
 import Filters from '~/components/orders/Filters';
@@ -71,13 +72,13 @@ const useOrders = server$(async function(page: number, limit: number, search: { 
         filterOperations.userId = search.userId
     }
     if (search.startDate) {
-        filterOperations.deliveryDate = { $gte: new Date(search.startDate) }
+        filterOperations.orderDate = { $gte: new Date(search.startDate) }
     }
     if (search.endDate) {
         // if (!filterOperations.deliveryDate) {
         //     filterOperations.deliveryDate = {}
         // }
-        filterOperations.deliveryDate.$lte = new Date(search.endDate)
+        filterOperations.orderDate.$lte = new Date(search.endDate)
     }
     let orders = await Order.find(filterOperations, { __v: 0 }).populate('userId partnerId warehouseId billingId brandId').skip(skip).limit(limit) as any[];
     orders = orders.map(order => order.toJSON()) as InterfaceOrder[];

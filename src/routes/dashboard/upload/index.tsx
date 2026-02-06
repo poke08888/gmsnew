@@ -41,7 +41,6 @@ const useUsers = routeLoader$(async ({sharedMap}) => {
 })
 
 const addOrder = server$(async function (orderData: InterfaceOrder) {
-    console.log('Received order data to add:', orderData);
     try {
         const auth_token = this.cookie.get('auth_token')?.value || '';
 

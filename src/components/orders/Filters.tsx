@@ -1,5 +1,5 @@
 import { component$, useSignal, useTask$ } from '@builder.io/qwik';
-import { InterfaceChannel, InterfacePartner, InterfaceUser } from '~/types/common';
+import { InterfacePartner, InterfaceUser } from '~/types/common';
 import { LuSearch as Search } from '@qwikest/icons/lucide';
 import { useNavigate } from '@builder.io/qwik-city';
 interface Props {
@@ -10,7 +10,6 @@ interface Props {
 }
 
 export default component$(({search, partners, users}: Props) => {
-    const nav = useNavigate()
 
     const inputText = useSignal('');
     useTask$(({track, cleanup}) => {

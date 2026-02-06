@@ -24,7 +24,6 @@ const UpdateUserPermission = server$(async function (user: InterfaceUser) {
   // console.log('Updating user permissions for:', user);
 
   if (!user._id) {
-    console.log('No user ID provided.');
 
     return {success: false, message: 'User ID cis required for updating permissions.'};
     // throw new Error('User ID is required for updating permissions.');
@@ -32,7 +31,6 @@ const UpdateUserPermission = server$(async function (user: InterfaceUser) {
 
   const userExist = await GetUserById(user._id);
   if (!userExist) {
-    console.log('User not found with ID:', user._id);
     return {success: false, message: 'User not found.'};
     // throw new Error('User not found.');
   }
@@ -45,7 +43,6 @@ const UpdateUserPermission = server$(async function (user: InterfaceUser) {
   if (user.username !== userExist.username) {
     const usernameUpdated = await UpdateUserUsername(user._id, user.username);
     if (!usernameUpdated) {
-      console.log('Username already exists:', user.username);
       return {success: false, message: 'Username already exists.'};
       // throw new Error('Username already exists.');
     }
@@ -54,7 +51,6 @@ const UpdateUserPermission = server$(async function (user: InterfaceUser) {
   if (user.email !== userExist.email) {
     const emailUpdated = await UpdateUserEmail(user._id, user.email);
     if (!emailUpdated) {
-      console.log('Email already exists:', user.email);
       return {success: false, message: 'Email already exists.'};
       // throw new Error('Email already exists.');
     }

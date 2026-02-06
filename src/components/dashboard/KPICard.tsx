@@ -25,7 +25,7 @@ export interface KPICardProps {
 }
 
 const KPICard = component$((props: KPICardProps) => {
-  const { title, value, subValue, icon, colorClass = '', isPrimary, comparison, kpi } = props;
+  const { title, value, subValue, isPrimary, comparison, kpi } = props;
   const isPositive = !!comparison && comparison.absolute >= 0;
 
   return (

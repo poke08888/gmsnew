@@ -8,7 +8,6 @@ interface Props {
     onOpenProductDetail: { isOpen: boolean, product: any }
 }
 export default component$(({ onOpenProductDetail, product }: Props) => {
-    console.log('Product Details:', product);
     const chartByPartnerRevenueRef = useSignal<Element>();
     const chartByPartnerOrdersRef = useSignal<Element>();
     const chartByPartnerProductsRef = useSignal<Element>();

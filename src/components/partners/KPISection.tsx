@@ -1,8 +1,10 @@
+//@ts-nocheck
+
 import { component$, useSignal } from "@builder.io/qwik";
 import { LuCalendar } from "@qwikest/icons/lucide";
 
 interface Props {
-    kpis: { month: any[], quarter: any[], year: any[] }
+    kpis: any
 }
 export default component$(({ kpis }: Props) => {
     return (

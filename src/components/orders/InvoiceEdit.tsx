@@ -1,28 +1,28 @@
 import { component$, isBrowser, useComputed$, useSignal, useVisibleTask$ } from "@builder.io/qwik";
 import { $ } from "@builder.io/qwik";
 import { LuX as X } from "@qwikest/icons/lucide";
-import { EnumUserRole, InterfaceOrder, InterfaceUser } from "~/types/common";
+import { EnumUserRole, InterfaceOrder } from "~/types/common";
 
 import { GetBillingById, GetAllBillings } from "~/services/billing.service";
-import { UpdateOrder } from "~/services/order.service";
+// import { UpdateOrder } from "~/services/order.service";
 import { GetAllPartners } from "~/services/partner.service";
 import { GetAllWarehouses } from "~/services/warehouse.service";
 import { server$, useNavigate } from "@builder.io/qwik-city";
 import { connectDB } from "~/libs/db";
 import { Order } from "~/models/order.model";
 import { verifyJWT } from "~/services/hash.service";
-import { User } from "~/models/user.model";
+// import { User } from "~/models/user.model";
 import { Partner } from "~/models/partner.model";
 interface Props {
     orderAction: { order: InterfaceOrder | null, action: string };
 }
 
-const getBilling = server$(async (billingId: string) => {
-    // console.log('Fetching billing for ID:', billingId);
-    const billing = await GetBillingById(billingId);
-    // console.log('Fetched billing:', billing);
-    return billing;
-});
+// const getBilling = server$(async (billingId: string) => {
+//     // console.log('Fetching billing for ID:', billingId);
+//     const billing = await GetBillingById(billingId);
+//     // console.log('Fetched billing:', billing);
+//     return billing;
+// });
 
 const loadOptions = server$(async () => {
   const partners = await GetAllPartners();
@@ -36,12 +36,10 @@ const saveToServer = server$(async function(order: InterfaceOrder) {
 
     const auth_token = this.cookie.get('auth_token')?.value;
     if (!auth_token) {
-        console.log('No auth token found');
         return false;
     }
     const user = await verifyJWT(auth_token);
     if (!user) {
-      console.log('No user found');
         return false;
     }
     await connectDB();
@@ -93,7 +91,6 @@ export default component$(({ orderAction }: Props) => {
 
   const handleSave = $(async () => {
     if (!draft.value) return;
-    console.log('Saving order draft:', draft.value);
     try {
       await saveToServer(draft.value);
       // update parent state and close
@@ -118,7 +115,7 @@ export default component$(({ orderAction }: Props) => {
             return `${d.getDate().toString().padStart(2, '0')}/${(d.getMonth() + 1).toString().padStart(2, '0')}/${d.getFullYear()}`;
         }
 
-        const VAT_RATE = 0.08;
+        // const VAT_RATE = 0.08;
 
         const totalPreTax = (order.items || []).reduce((s: number, it: any) => s + (Number(it.netprice || 0) * Number(it.qty || 0)), 0);
         const totalAmount = (order.items || []).reduce((s: number, it: any) => s + (Number(it.grossprice || 0) * Number(it.qty || 0)), 0);
@@ -151,19 +148,19 @@ export default component$(({ orderAction }: Props) => {
           <!-- Left: General Partner Info -->
           <div style="flex: 1; background-color: #f9fafb; padding: 15px; border-radius: 8px;">
             <h3 style="font-size: 14px; text-transform: uppercase; color: #4f46e5; font-weight: 700; margin: 0 0 10px 0;">Thông tin đối tác</h3>
-            <p style="margin: 4px 0;"><strong>Nhà phân phối:</strong> ${order.partnerId.name}</p>
-            <p style="margin: 4px 0;"><strong>Thương hiệu:</strong> ${order.brandId?.name}</p>
-            <p style="margin: 4px 0;"><strong>Địa chỉ giao hàng:</strong> ${order.warehouseId?.name || 'Chưa cập nhật'}</p>
-            <p style="margin: 4px 0;"><strong>Người nhận:</strong> ${order.warehouseId?.contactName || '---'} ${order.warehouseId?.contactPhone ? `- ${order.warehouseId?.contactPhone}` : ''}</p>
+            <p style="margin: 4px 0;"><strong>Nhà phân phối:</strong> ${typeof order.partnerId === 'string' ? order.partnerId : order.partnerId?.name}</p>
+            <p style="margin: 4px 0;"><strong>Thương hiệu:</strong> ${typeof order.brandId === 'string' ? order.brandId : order.brandId?.name}</p>
+            <p style="margin: 4px 0;"><strong>Địa chỉ giao hàng:</strong> ${typeof order.warehouseId === 'string' ? order.warehouseId : order.warehouseId?.name || 'Chưa cập nhật'}</p>
+            <p style="margin: 4px 0;"><strong>Người nhận:</strong> ${typeof order.warehouseId === 'string' ? '---' : order.warehouseId?.contactName || '---'} ${typeof order.warehouseId === 'string' ? '' : order.warehouseId?.contactPhone ? `- ${order.warehouseId?.contactPhone}` : ''}</p>
           </div>
 
           <!-- Right: Billing Info (Thông tin xuất hóa đơn) -->
           <div style="flex: 1; background-color: #f9fafb; padding: 15px; border-radius: 8px;">
             <h3 style="font-size: 14px; text-transform: uppercase; color: #4f46e5; font-weight: 700; margin: 0 0 10px 0;">Thông tin xuất hóa đơn</h3>
             ${order.billingId ? `
-                <p style="margin: 4px 0;"><strong>Tên đơn vị:</strong> ${order.billingId.name}</p>
-                <p style="margin: 4px 0;"><strong>MST:</strong> ${order.billingId.taxNumber}</p>
-                <p style="margin: 4px 0;"><strong>Địa chỉ:</strong> ${order.billingId.location}</p>
+                <p style="margin: 4px 0;"><strong>Tên đơn vị:</strong> ${typeof order.billingId === 'string' ? order.billingId : order.billingId.name}</p>
+                <p style="margin: 4px 0;"><strong>MST:</strong> ${typeof order.billingId === 'string' ? '' : order.billingId.taxNumber}</p>
+                <p style="margin: 4px 0;"><strong>Địa chỉ:</strong> ${typeof order.billingId === 'string' ? '' : order.billingId.location}</p>
             ` : `
                 <p style="margin: 4px 0; color: #6b7280; font-style: italic;">Không có thông tin hóa đơn được chọn.</p>
             `}
@@ -284,7 +281,7 @@ export default component$(({ orderAction }: Props) => {
                           <select class="border rounded px-2 py-1 w-full text-sm" value={selectedWarehouseId.value || ''} onInput$={(e: any) => { const id = e.target.value; selectedWarehouseId.value = id || null; if (!draft.value) return; if (!id) { draft.value.warehouseId = null; return; } const wh = options.value?.warehouses.find(w => w._id === id); if (wh) draft.value.warehouseId = wh; }}>
                             <option value="">-- Chọn kho --</option>
                             {options.value?.warehouses.map(w => (
-                              <option value={w._id as string}>{w.name} {w.address ? `- ${w.address}` : ''}</option>
+                              <option value={w._id as string}>{`${w.name} ${w.address ? `- ${w.address}` : ''}`}</option>
                             ))}
                           </select>
 
@@ -292,7 +289,7 @@ export default component$(({ orderAction }: Props) => {
                           <select class="border rounded px-2 py-1 w-full text-sm" value={selectedBillingId.value || ''} onInput$={(e: any) => { const id = e.target.value; selectedBillingId.value = id || null; if (!draft.value) return; if (!id) { draft.value.billingId = null; return; } const b = options.value?.billings.find(bi => bi._id === id); if (b) draft.value.billingId = b; }}>
                             <option value="">-- Chọn hóa đơn --</option>
                             {options.value?.billings.map(b => (
-                              <option value={b._id as string}>{b.name} {b.taxNumber ? `- ${b.taxNumber}` : ''}</option>
+                              <option value={b._id as string}>{`${b.name} ${b.taxNumber ? `- ${b.taxNumber}` : ''}`}</option>
                             ))}
                           </select>
 

@@ -1,11 +1,16 @@
 import { component$, Slot } from '@builder.io/qwik';
-import { routeLoader$ } from '@builder.io/qwik-city';
+import { routeAction$, routeLoader$ } from '@builder.io/qwik-city';
 import { Sidebar } from '~/components/Sidebar';
 import { verifyJWT } from '~/services/hash.service';
 import { type RequestHandler } from '@builder.io/qwik-city';
 import { User } from '~/models/user.model';
 import { connectDB } from '~/libs/db';
 
+export const handleLogout = routeAction$(async (_, {cookie, redirect}) => {
+    // Xóa cookie (ví dụ: auth_token)
+    cookie.delete('auth_token', { path: '/' });
+    throw redirect(302, '/login');
+})
 
 
 export const onGet: RequestHandler = async ({ cookie, redirect, sharedMap }) => {
@@ -38,7 +43,7 @@ export default component$(() => {
     const currentUser = useCurrentUser()
     return (
         <div class="flex bg-gray-50 min-h-screen font-sans">
-            <Sidebar currentUser={currentUser} />
+            <Sidebar currentUser={currentUser}/>
             <div class="flex-1 ml-64">
                 <main class="p-8 max-w-7xl mx-auto">
                     <Slot />

@@ -53,7 +53,7 @@ const partnerDataDetails = routeLoader$(async (event) => {
                             { $cond: [
                                 { $eq: [ timeRange, "all"] },
                                 true,
-                                { $gte: [ "$deliveryDate", startOfTimeRange]}
+                                { $gte: [ "$orderDate", startOfTimeRange]}
                             ]}
                         ]
                     }
@@ -121,7 +121,7 @@ const partnerDataDetails = routeLoader$(async (event) => {
                                 { $eq: [ "$userId", user._id ] },
                                 { $eq: [ isAdmin, true]}
                             ] },
-                            { $gte: [ "$deliveryDate", new Date(now.getFullYear(), 0, 1)]}
+                            { $gte: [ "$orderDate", new Date(now.getFullYear(), 0, 1)]}
                         ]
                     }
                 }}
@@ -188,7 +188,7 @@ const partnerDataDetails = routeLoader$(async (event) => {
                             { $cond: [
                                 { $eq: [ timeRange, "all"] },
                                 true,
-                                { $gte: [ "$deliveryDate", startOfTimeRange]}
+                                { $gte: [ "$orderDate", startOfTimeRange]}
                             ]}
                         ]
                     }
@@ -255,7 +255,7 @@ const useKPIS = routeLoader$(async (event) => {
                 { $match: {
                     $expr: { $and: [
                         { $eq: ['$partnerId', id ] },
-                        { $gte: [ "$deliveryDate", new Date(new Date().getFullYear(), new Date().getMonth(), 1) ] }
+                        { $gte: [ "$orderDate", new Date(new Date().getFullYear(), new Date().getMonth(), 1) ] }
                     ]}
                 }}
             ],
@@ -286,7 +286,7 @@ const useKPIS = routeLoader$(async (event) => {
                 { $match: {
                     $expr: { $and: [
                         { $eq: ['$partnerId', id ] },
-                        { $gte: [ "$deliveryDate", new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3, 1)] }
+                        { $gte: [ "$orderDate", new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3, 1)] }
                     ]}
                 }}
             ],
@@ -316,7 +316,7 @@ const useKPIS = routeLoader$(async (event) => {
                 { $match: {
                     $expr: { $and: [
                         { $eq: ['$partnerId', id ] },
-                        { $gte: [ "$deliveryDate", new Date(new Date().getFullYear(), 0, 1)] }
+                        { $gte: [ "$orderDate", new Date(new Date().getFullYear(), 0, 1)] }
                     ]}
                 }}
             ],

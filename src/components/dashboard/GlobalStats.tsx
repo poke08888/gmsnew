@@ -1,12 +1,12 @@
 import { component$ } from "@builder.io/qwik";
 import KPICard from "./KPICard";
-import { LuDollarSign } from "@qwikest/icons/lucide";
+// import { LuDollarSign } from "@qwikest/icons/lucide";
 interface Props {
     stats: any;
 }
 
 export default component$(({ stats }: Props) => {
-    console.log("stats in global stats", stats);
+    // console.log("stats in global stats", stats);
 
     return (
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

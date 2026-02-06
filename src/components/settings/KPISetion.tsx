@@ -74,7 +74,6 @@ export default component$(({ users, partners, channels, kpis }: Props) => {
     const nav = useNavigate()
     const KPIData = useSignal({type: EnumKPIType.CHANNEL, targetId: '', period: '', timeframe: '', amount: 0});
     const handleSaveKPI = $(async () => {
-        console.log('Saving KPI:', KPIData.value);
         await saveKPI(KPIData.value.type, KPIData.value.targetId, KPIData.value.period, KPIData.value.timeframe, KPIData.value.amount);
         await nav()
     })
@@ -95,7 +94,7 @@ export default component$(({ users, partners, channels, kpis }: Props) => {
                     <label class="block text-sm font-medium text-gray-700 mb-1">Chọn đối tượng cụ thể</label>
                     <select value={KPIData.value.targetId} onChange$={(e: any) => {KPIData.value = {...KPIData.value, targetId: e.target.value}}} class="w-full rounded-lg border-gray-300 border p-2 outline-none">
                         {KPIData.value.type == EnumKPIType.CHANNEL && channels.map(channel => <option key={channel._id} value={channel._id}>{channel.name}</option>)}
-                        {KPIData.value.type == EnumKPIType.USER && users.map(user => <option key={user._id} value={user._id}>{user.name}({user.role})</option>)}
+                        {KPIData.value.type == EnumKPIType.USER && users.map(user => <option key={user._id} value={user._id}>{`${user.name}(${user.role})`}</option>)}
                         {KPIData.value.type == EnumKPIType.PARTNER && partners.map(partner => <option key={partner._id} value={partner._id}>{partner.name}</option>)}
                     </select>
                 </div>

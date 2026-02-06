@@ -8,7 +8,7 @@ interface Props {
 }
 
 export default component$(({ brands, filter }: Props) => {
-    const range = useSignal("today");
+    // const range = useSignal("today");
     return (
         <div class="flex flex-col md:flex-row gap-3">
             <div class="flex flex-col md:flex-row gap-3 bg-white p-3 rounded-lg shadow-sm border border-gray-200">

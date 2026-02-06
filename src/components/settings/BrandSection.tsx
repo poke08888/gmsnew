@@ -24,7 +24,6 @@ export default component$(({ brands }: Props) => {
     const nav = useNavigate()
     const brandData = useSignal("");
     const handleSaveBrand = $(async () => {
-        console.log('Saving Brand:', brandData.value);
         await saveBrand(brandData.value);
         await nav()
     })
