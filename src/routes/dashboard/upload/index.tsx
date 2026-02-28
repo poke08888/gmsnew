@@ -79,9 +79,29 @@ const addOrder = server$(async function (orderData: InterfaceOrder) {
 
         await connectDB();
         
+        const brand = await Brand.findOne({_id: orderData.brandId})
+        let brand_short = brand?.name.length! >= 2 ? brand?.name.slice() : brand?.name;
+        const now = new Date();
+        const yyyy = now.getFullYear();
+        const mm = String(now.getMonth() + 1).padStart(2, '0');
+        const dd = String(now.getDate()).padStart(2, '0');
+        const dateString = `${yyyy}${mm}${dd}`;
+        let randomNumber = Math.floor(100000 + Math.random() * 900000);
+        let orderCode = `${brand_short}${dateString}${randomNumber}`;
+        while (true) {
+            let exist = await Order.findOne({orderCode: orderCode})
+            if (exist) {
+                randomNumber = Math.floor(100000 + Math.random() * 900000);
+                orderCode = `${brand_short}${dateString}${randomNumber}`;
+                continue;
+            }
+            break;
+        }
+
         const newOrder = new Order({
             ...orderData,
-            userId: orderData.userId
+            userId: orderData.userId,
+            orderCode: orderCode
         })
         await newOrder.save();
 

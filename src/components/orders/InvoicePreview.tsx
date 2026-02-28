@@ -55,7 +55,7 @@ export default component$(({ orderAction }: Props) => {
            </div>
            <div style="width: 30%; text-align: right;">
              <p style="margin: 3px 0; font-size: 16px; font-weight: bold; color: #dc2626;">PHIẾU ĐẶT HÀNG</p>
-             <p style="margin: 3px 0; color: #6b7280;">Mã đơn: #${order._id}</p>
+             <p style="margin: 3px 0; color: #6b7280;">Mã đơn: #${order.orderCode}</p>
              <p style="margin: 3px 0; color: #6b7280;">Ngày đặt: ${formatDate(order.orderDate.toDateString())}</p>
            </div>
         </div>
@@ -68,7 +68,7 @@ export default component$(({ orderAction }: Props) => {
             <h3 style="font-size: 14px; text-transform: uppercase; color: #4f46e5; font-weight: 700; margin: 0 0 10px 0;">Thông tin đối tác</h3>
             <p style="margin: 4px 0;"><strong>Nhà phân phối:</strong> ${typeof order.partnerId === 'string' ? order.partnerId : order.partnerId?.name}</p>
             <p style="margin: 4px 0;"><strong>Thương hiệu:</strong> ${typeof order.brandId === 'string' ? order.brandId : order.brandId?.name}</p>
-            <p style="margin: 4px 0;"><strong>Địa chỉ giao hàng:</strong> ${typeof order.warehouseId === 'string' ? order.warehouseId : order.warehouseId?.name || 'Chưa cập nhật'}</p>
+            <p style="margin: 4px 0;"><strong>Địa chỉ giao hàng:</strong> ${typeof order.warehouseId === 'string' ? order.warehouseId : order.warehouseId?.location || 'Chưa cập nhật'}</p>
             <p style="margin: 4px 0;"><strong>Người nhận:</strong> ${typeof order.warehouseId === 'string' ? '---' : order.warehouseId?.contactName || '---'} ${typeof order.warehouseId === 'string' ? '' : order.warehouseId?.contactPhone ? `- ${order.warehouseId?.contactPhone}` : ''}</p>
           </div>
 
