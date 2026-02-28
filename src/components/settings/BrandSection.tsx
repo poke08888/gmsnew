@@ -4,7 +4,7 @@ import { LuTarget as Target, LuTrash as Trash } from '@qwikest/icons/lucide'
 import { EnumKPIType, InterfaceUser, InterfaceBrand, InterfaceChannel, InterfacePartner, InterfaceKPI } from "~/types/common";
 import { Brand } from "~/models/brand.model";
 import { addKPI, deleteKPI } from "~/services/kpi.service";
-
+import { useAddBrand, useDeleteBrand } from "~/routes/dashboard/settings/layout";
 interface Props {
     brands: InterfaceBrand[]
 }
@@ -21,11 +21,16 @@ const removeBrand = server$(async (brandId: string) => {
 })
 
 export default component$(({ brands }: Props) => {
-    const nav = useNavigate()
     const brandData = useSignal("");
+    const saveBrandAction = useAddBrand();
+    const deleteBrandAction = useDeleteBrand();
     const handleSaveBrand = $(async () => {
-        await saveBrand(brandData.value);
-        await nav()
+        await saveBrandAction.submit({ name: brandData.value });
+        // await nav()
+    })
+    const handleDeleteBrand = $(async (brandId: string) => {
+        await deleteBrandAction.submit({ brandId });
+        // await nav()
     })
     return (
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
@@ -54,7 +59,7 @@ export default component$(({ brands }: Props) => {
                                     
                                     <td class="px-6 py-4 text-sm text-gray-600">{brand.name}</td>
                                     {/* <td class="px-6 py-4 text-sm font-bold text-indigo-600 text-right">{brand.amount}</td> */}
-                                    <td class="px-6 py-4 text-center"><button onClick$={async () => {await removeBrand(brand._id); await nav()}} class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Trash class="w-4 h-4"/></button></td>
+                                    <td class="px-6 py-4 text-center"><button onClick$={async () => {await handleDeleteBrand(brand._id)}} class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors"><Trash class="w-4 h-4"/></button></td>
                                 </tr>
                             ))}
                             {brands.length == 0 && <tr><td colSpan={4} class="p-8 text-center text-gray-400 italic">Chưa có thương hiệu nào được thiết lập</td></tr>}

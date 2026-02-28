@@ -1,4 +1,5 @@
 import mongoose from 'mongoose';
+import { MongoClient, GridFSBucket } from "mongodb";
 
 import '../models/partner.model';
 import '../models/user.model';
@@ -28,3 +29,10 @@ export async function connectDB() {
   cached.conn = await cached.promise;
   return cached.conn;
 }
+
+let client: MongoClient;
+let clientPromise: Promise<MongoClient>;
+client = new MongoClient(MONGODB_URI);
+clientPromise = client.connect();
+
+export { clientPromise };

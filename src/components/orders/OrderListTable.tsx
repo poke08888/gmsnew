@@ -15,16 +15,16 @@ interface Props {
     orderAction: { action: string, order: InterfaceOrder | null}
 }
 const deleteOrder = server$(async function(orderId: string) {
-    const auth_token = this.cookie.get('auth_token')?.value;
-    if (!auth_token) {
+    const session = this.sharedMap.get('session');
+    if (!session) {
         return false;
     }
 
-    const isValid = await verifyJWT(auth_token);
+    await connectDB();
+    const isValid = await User.findOne({ _id: session.user._id });
     if (!isValid) {
         return false;
     }
-    await connectDB();
 
     const order = await Order.findById(orderId).lean();
 

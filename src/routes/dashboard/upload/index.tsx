@@ -29,7 +29,15 @@ const useBrands = routeLoader$(async () => {
 })
 
 const useUsers = routeLoader$(async ({sharedMap}) => {
-    const user = sharedMap.get('user');
+    const session = sharedMap.get('session');
+        if (!session) {
+            return [];
+        }
+
+        const user = await User.findOne({ _id: session.user._id });
+        if (!user) {
+            return [];
+        }
     await connectDB();
     if (user.role == EnumUserRole.DIRECTOR) {
         const users = await User.find({}, { __v: 0 }).lean();
@@ -42,13 +50,12 @@ const useUsers = routeLoader$(async ({sharedMap}) => {
 
 const addOrder = server$(async function (orderData: InterfaceOrder) {
     try {
-        const auth_token = this.cookie.get('auth_token')?.value || '';
-
-        if (!auth_token) {
+        const session = this.sharedMap.get('session');
+        if (!session) {
             return { success: false, error: 'Unauthorized' };
         }
 
-        const user = await verifyJWT(auth_token);
+        const user = await User.findOne({ _id: session.user._id });
         if (!user) {
             return { success: false, error: 'Unauthorized' };
         }

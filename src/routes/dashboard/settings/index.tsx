@@ -1,11 +1,11 @@
 import { LuUsers as Users, LuBuilding as Building, LuTarget as Target, LuShield as Shield } from '@qwikest/icons/lucide';
 
 import { component$, useSignal, $ } from '@builder.io/qwik';
-import { routeLoader$, server$, type DocumentHead } from '@builder.io/qwik-city';
+import { routeAction$, routeLoader$, server$, type DocumentHead, zod$, z } from '@builder.io/qwik-city';
 
 import { verifyJWT } from '~/services/hash.service';
-import { EnumUserRole, InterfaceBrand } from '~/types/common';
-import { CreateUser } from '~/services/user.service';
+import { EnumUserCustomPermission, EnumUserRole, InterfaceBrand } from '~/types/common';
+import { CreateUser, GetUserById, UpdateUserEmail, UpdateUserName, UpdateUserPassword, UpdateUserPermissions, UpdateUserRole, UpdateUserUsername } from '~/services/user.service';
 import { User } from '~/models/user.model';
 import { Channel } from '~/models/channel.model';
 import { InterfaceUser, InterfaceChannel, InterfacePartner, InterfaceKPI } from '~/types/common';
@@ -56,26 +56,89 @@ const useKPIs = routeLoader$(async () => {
     return kpis as unknown as InterfaceKPI[];
 
 })
-const addUser = server$(async function (username: string, password: string, role: string, email: string, name: string) {
-    const auth = this.cookie.get('auth_token')?.value || '';
 
-    const isAuth = await verifyJWT(auth);
-    if (!isAuth) {
+export const useAddUser = routeAction$(async (data, {sharedMap}) => {
+    const session = sharedMap.get('session');
+    await connectDB();
+    const user = await User.findById(session.user._id);
+    if (!user) {
         return { success: false, error: 'Unauthorized' };
     }
 
-    await connectDB();
-    const user = isAuth as InterfaceUser;
-    if (!user || user.role !== EnumUserRole.DIRECTOR) {
+    if (user.role !== EnumUserRole.DIRECTOR) {
         return { success: false, error: 'Unauthorized' };
     }
     
-    const success = await CreateUser(username, password, name, email);
+    const { username, password, role, email, name } = data;
+    const success = await CreateUser(username, password, name, email, role as EnumUserRole);
     if (!success) {
         return { success: false,  error: 'User/Email already exists' };
     }
     return { success: true };
-})
+}, zod$({
+    username: z.string(),
+    password: z.string(),
+    role: z.string(),
+    email: z.string(),
+    name: z.string(),
+}))
+
+export const useUpdateUser = routeAction$(async (data, {sharedMap}) => {
+    const session = sharedMap.get('session');
+    await connectDB();
+    const user = await User.findById(session.user._id);
+    if (!user) {
+        return { success: false, error: 'Unauthorized' };
+    }
+
+    if (user.role !== EnumUserRole.DIRECTOR) {
+        return { success: false, error: 'Unauthorized' };
+    }
+
+    const { _id, username, password, role, email, name, assignedChannels, assignedBrands, customPermissions } = data;
+
+    const userToUpdate = await GetUserById(_id);
+
+    if (!userToUpdate) {
+        return {success: false, message: 'User not found.'};
+    }
+
+    if (userToUpdate.username !== username) {
+        await UpdateUserUsername(userToUpdate._id, username);
+    }
+
+    if (userToUpdate.name !== name) {
+        await UpdateUserName(userToUpdate._id, name);
+    }
+
+    if (userToUpdate.email !== email) {
+        await UpdateUserEmail(userToUpdate._id, email);
+    }
+
+    if (userToUpdate.role !== role) {
+        await UpdateUserRole(userToUpdate._id, role);
+    }
+
+    if (password && password.trim() !== '') {
+        await UpdateUserPassword(userToUpdate._id, password);
+    }
+
+    await UpdateUserPermissions(userToUpdate._id, assignedChannels as unknown as InterfaceChannel[], assignedBrands as unknown as InterfaceBrand[], customPermissions as unknown as EnumUserCustomPermission[] || []);
+    
+    return { success: true };
+    
+}, zod$({
+    _id: z.string(),
+    username: z.string(),
+    password: z.string().optional(),
+    role: z.string(),
+    email: z.string(),
+    name: z.string(),
+    assignedChannels: z.object({}).passthrough().array(),
+    assignedBrands: z.object({}).passthrough().array(),
+    customPermissions: z.array(z.string()),
+}))
+
 
 export const head: DocumentHead = {
     title: "Cài đặt hệ thống - GMS",
@@ -96,19 +159,25 @@ export default component$(() => {
     const brands = useBrands();
     const kpis = useKPIs();
     const nav = useNavigate();
-    const activeTab = useSignal('users');   
-    const addUserData = useSignal({name: '', username: '', password: '', role: '', email: '', success: false, error: ''})
+    const activeTab = useSignal('users');
+    const addUserAction = useAddUser();
+    const addUserData = useSignal({name: '', username: '', password: '', role: EnumUserRole.STAFF, email: '', success: false, error: ''})
     const handleAddUser = $(async () => {
-        const result = await addUser(addUserData.value.username, addUserData.value.password, addUserData.value.role, addUserData.value.email, addUserData.value.name);
-        if (result?.success) {
+
+        const result = await addUserAction.submit({ username: addUserData.value.username, 
+            password: addUserData.value.password, 
+            role: addUserData.value.role,
+            email: addUserData.value.email,
+            name: addUserData.value.name,
+        });
+        if (result?.value.success) {
             // alert('Người dùng đã được tạo thành công');
-            addUserData.value = {name: '', username: '', password: '', role: '', email: '', success: true, error: ''};
+            addUserData.value = {name: '', username: '', password: '', role: EnumUserRole.STAFF, email: '', success: true, error: ''};
         } else {
-            alert('Lỗi khi tạo người dùng: ' + result?.error);
+            alert('Lỗi khi tạo người dùng: ' + result?.value.error);
             addUserData.value.success = false;
-            addUserData.value.error = result?.error || 'Lỗi không xác định';
+            addUserData.value.error = result?.value.error || 'Lỗi không xác định';
         }
-        await nav();
     })
 
     const modalPartnerData = useSignal({open: false, partner: null as any});

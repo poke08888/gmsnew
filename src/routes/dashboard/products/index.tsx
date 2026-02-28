@@ -14,6 +14,7 @@ import ProductTable from "~/components/products/ProductTable";
 
 import { isServer } from "@builder.io/qwik/build";
 import ProductDetails from "~/components/products/ProductDetails";
+import { User } from "~/models/user.model";
 
 const useBrands = routeLoader$(async function (event) {
     const brands = await Brand.aggregate([
@@ -24,16 +25,19 @@ const useBrands = routeLoader$(async function (event) {
 })
 
 const useProducts = server$(async function (text: string = '', startDate: string = '', endDate: string = '', brand: string = 'all', sortBy: string = 'revenue-desc') {
-    const auth = this.cookie.get('auth_token')?.value || '';
+    const session = this.sharedMap.get('session');
+    if (!session) {
+        return { success: false, error: 'Unauthorized' };
+    }
 
-    const isAuth = await verifyJWT(auth);
-    if (!isAuth) {
+    const user = await User.findOne({ _id: session.user._id });
+    if (!user) {
         return { success: false, error: 'Unauthorized' };
     }
 
     await connectDB();
 
-    const isAdmin = isAuth.role == EnumUserRole.DIRECTOR || isAuth.customPermissions.includes(EnumUserCustomPermission.VIEW_ALL_DATA);
+    const isAdmin = user.role == EnumUserRole.DIRECTOR || user.customPermissions.includes(EnumUserCustomPermission.VIEW_ALL_DATA);
 
     const partners = (await Partner.aggregate([
         {
@@ -41,7 +45,7 @@ const useProducts = server$(async function (text: string = '', startDate: string
                 $expr: {
                     $or: [
                         { $eq: [isAdmin, true] },
-                        { $in: ["$channelId", isAuth.assignedChannels] }
+                        { $in: ["$channelId", user.assignedChannels] }
                     ]
                 }
             }
@@ -65,13 +69,13 @@ const useProducts = server$(async function (text: string = '', startDate: string
                             $or: [
                                 { $eq: [isAdmin, true] },
                                 { $in: ["$partnerId", partners] },
-                                { $eq: ["$userId", isAuth._id] },
-                                { $eq: ["$brandId", isAuth.assignedBrands] }
+                                { $eq: ["$userId", user._id] },
+                                { $eq: ["$brandId", user.assignedBrands] }
                             ]
-                        }, 
+                        },
                         { // brand filter
                             $cond: [
-                                { $eq: [brand, 'all']},
+                                { $eq: [brand, 'all'] },
                                 true,
                                 { $eq: ["$brandId", brand] }
                             ]
@@ -157,12 +161,13 @@ const useProducts = server$(async function (text: string = '', startDate: string
         },
         // sorting
         // check sortBy value
-        { $sort: 
-            sortBy == 'revenue-asc' ? { totalNetRevenue: 1 } :
-            sortBy == 'revenue-desc' ? { totalNetRevenue: -1 } :
-            sortBy == 'qty-asc' ? { totalQty: 1 } :
-            sortBy == 'qty-desc' ? { totalQty: -1 } :
-            { totalNetRevenue: -1 }
+        {
+            $sort:
+                sortBy == 'revenue-asc' ? { totalNetRevenue: 1 } :
+                    sortBy == 'revenue-desc' ? { totalNetRevenue: -1 } :
+                        sortBy == 'qty-asc' ? { totalQty: 1 } :
+                            sortBy == 'qty-desc' ? { totalQty: -1 } :
+                                { totalNetRevenue: -1 }
         }
 
     ])
@@ -172,7 +177,7 @@ const useProducts = server$(async function (text: string = '', startDate: string
 
 export default component$(() => {
 
-    const filterBar = useStore({text: '', brand: 'all', startDate: "", endDate: "", sortBy: 'revenue-desc' });
+    const filterBar = useStore({ text: '', brand: 'all', startDate: "", endDate: "", sortBy: 'revenue-desc' });
     const brands = useBrands();
     const products = useSignal({ success: false, data: null as any[] | null });
 
@@ -211,13 +216,13 @@ export default component$(() => {
             );
 
             products.value = { success: result.success, data: result.data ?? [] };
-            
+
         }, 100);
         cleanup(() => clearTimeout(id));
     });
 
     if (onOpenProductDetail.isOpen && onOpenProductDetail.product) {
-        return (<ProductDetails  product={onOpenProductDetail.product} onOpenProductDetail={onOpenProductDetail}/>)
+        return (<ProductDetails product={onOpenProductDetail.product} onOpenProductDetail={onOpenProductDetail} />)
     }
     return (
         <div class="space-y-6 animate-fade-in">
@@ -236,7 +241,7 @@ export default component$(() => {
             </div>
 
             <FilterBar filterBar={filterBar} brands={brands.value} />
-            <ProductTable products={products?.value.data ?? []} onOpenProductDetail={onOpenProductDetail}/>
+            <ProductTable products={products?.value.data ?? []} onOpenProductDetail={onOpenProductDetail} />
         </div>
     )
 })

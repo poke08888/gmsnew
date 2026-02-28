@@ -18,8 +18,9 @@ import KPITable from "~/components/dashboard/KPITable";
 import { KPI } from "~/models/kpi.model";
 import { Channel } from "~/models/channel.model";
 import { User } from "~/models/user.model";
+import { connectDB } from "~/libs/db";
 
-const useBrands = routeLoader$(async ({sharedMap}) => {
+const useBrands = routeLoader$(async ({ sharedMap }) => {
   const user = sharedMap.get("user");
   if (!user) return [];
 
@@ -31,29 +32,37 @@ const useBrands = routeLoader$(async ({sharedMap}) => {
 
 
 const useGlobalStats = server$(async function (timeRangeType: string, brand: string, startDate: string, endDate: string) {
-  const auth_token = this.cookie.get("auth_token")?.value || "";
-
-  const user = await verifyJWT(auth_token)
-  if (!user) {
-    return { success: false, message: "Unauthorized" };
+  const session = this.sharedMap.get('session');
+  if (!session) {
+    return { success: false, error: 'Unauthorized' };
   }
+  await connectDB();
+  const user = await User.findOne({ _id: session.user._id });
+  if (!user) {
+    return { success: false, error: 'Unauthorized' };
+  }
+  
 
   let isAdmin = user.role == EnumUserRole.DIRECTOR || user.customPermissions.includes(EnumUserCustomPermission.VIEW_ALL_DATA);
 
   const partners = (await Partner.aggregate([
-    { $match: {
-      $expr: {
-        $or: [
-          { $eq: [isAdmin, true] },
-          { $in: ["$channelId", user.assignedChannels]},
-        ]
+    {
+      $match: {
+        $expr: {
+          $or: [
+            { $eq: [isAdmin, true] },
+            { $in: ["$channelId", user.assignedChannels] },
+          ]
+        }
       }
-    }},
-    { $group: {
-      _id: null,
-      partners: { $addToSet: "$_id" }
-    }},
-    { $project: { partners: 1}}
+    },
+    {
+      $group: {
+        _id: null,
+        partners: { $addToSet: "$_id" }
+      }
+    },
+    { $project: { partners: 1 } }
   ]))[0]?.partners || []
   let startOrderDate = '';
   let endOrderDate = '';
@@ -65,7 +74,7 @@ const useGlobalStats = server$(async function (timeRangeType: string, brand: str
     startOrderDate = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
     endOrderDate = new Date(new Date().setHours(23, 59, 59, 999)).toISOString();
   } else if (timeRangeType == 'week') {
-    startOrderDate = new Date(new Date().setHours(0,0,0,0) - ((new Date().getDay() || 7) - 1) * 86400000).toISOString();
+    startOrderDate = new Date(new Date().setHours(0, 0, 0, 0) - ((new Date().getDay() || 7) - 1) * 86400000).toISOString();
     endOrderDate = new Date(new Date(startOrderDate).getTime() + 7 * 86400000 - 1).toISOString();
   }
   else if (timeRangeType == 'month') {
@@ -81,219 +90,264 @@ const useGlobalStats = server$(async function (timeRangeType: string, brand: str
   }
 
   const channelStats = await Order.aggregate([
-    { $match: {
-      $expr: {
-        $and: [
-          { $gte: ["$orderDate", new Date(startOrderDate)] },
-          { $lte: ["$orderDate", new Date(endOrderDate)] },
-          { $cond: [
-            { $eq: [brand, 'all'] },
-            true,
-            { $eq: ["$brandId", brand] }
-          ]},
-          { $or: [
-            { $eq: [isAdmin, true] },
-            { $in: ["$partnerId", partners] },
-            { $in: ["$brandId", user.assignedBrands]},
-          ]}
-          
-        ]
+    {
+      $match: {
+        $expr: {
+          $and: [
+            { $gte: ["$orderDate", new Date(startOrderDate)] },
+            { $lte: ["$orderDate", new Date(endOrderDate)] },
+            {
+              $cond: [
+                { $eq: [brand, 'all'] },
+                true,
+                { $eq: ["$brandId", brand] }
+              ]
+            },
+            {
+              $or: [
+                { $eq: [isAdmin, true] },
+                { $in: ["$partnerId", partners] },
+                { $in: ["$brandId", user.assignedBrands] },
+              ]
+            }
+
+          ]
+        }
       }
-    }},
-    { $lookup: {
-      from: "partners",
-      localField: "partnerId",
-      foreignField: "_id",
-      as: "partner"
-    }},
+    },
+    {
+      $lookup: {
+        from: "partners",
+        localField: "partnerId",
+        foreignField: "_id",
+        as: "partner"
+      }
+    },
     { $unwind: "$partner" },
-    { $lookup: {
-      from: 'channels',
-      localField: 'partner.channelId',
-      foreignField: '_id',
-      as: 'channel'
-    }},
+    {
+      $lookup: {
+        from: 'channels',
+        localField: 'partner.channelId',
+        foreignField: '_id',
+        as: 'channel'
+      }
+    },
     { $unwind: "$channel" },
-    { $addFields: {
-      totalNetRevenue: {
-        $sum: {
-          $map: {
-            input: "$items",
-            as: "items",
-            in: { $sum: { $multiply: ["$$items.netprice", "$$items.qty"] }}
+    {
+      $addFields: {
+        totalNetRevenue: {
+          $sum: {
+            $map: {
+              input: "$items",
+              as: "items",
+              in: { $sum: { $multiply: ["$$items.netprice", "$$items.qty"] } }
+            }
           }
-        }
-      },
-      totalQty: {
-        $sum: {
-          $map: {
-            input: "$items",
-            as: "items",
-            in: { $sum: "$$items.qty"}
+        },
+        totalQty: {
+          $sum: {
+            $map: {
+              input: "$items",
+              as: "items",
+              in: { $sum: "$$items.qty" }
+            }
           }
         }
       }
-    }},
-    { $group: {
-      _id: "$channel._id",
-      channelName: { $first: "$channel.name" },
-      totalOrders: { $sum: 1 },
-      totalNetRevenue: { $sum: "$totalNetRevenue" },
-      totalQty: { $sum: "$totalQty" }
-    }},
-    { $project: {
-      _id: 1,
-      channelId: "$_id",
-      channelName: 1,
-      totalOrders: 1,
-      totalNetRevenue: 1,
-      totalQty: 1
-    }},
-    { $lookup: {
-      from: 'kpis',
-      let: {channelId: '$_id'},
-      pipeline: [
-        { $match: {
-          $expr: {
-            $and: [
-              { $eq: ['$type', EnumKPIType.CHANNEL]},
-              { $eq: ['$targetId', '$$channelId'] },
-              // { $gte: ['$timeframe', startOrderDate.slice(0,7) ] },
-              // { $lte: ['$timeframe', endOrderDate.slice(0,7) ] },
-            ]
+    },
+    {
+      $group: {
+        _id: "$channel._id",
+        channelName: { $first: "$channel.name" },
+        totalOrders: { $sum: 1 },
+        totalNetRevenue: { $sum: "$totalNetRevenue" },
+        totalQty: { $sum: "$totalQty" }
+      }
+    },
+    {
+      $project: {
+        _id: 1,
+        channelId: "$_id",
+        channelName: 1,
+        totalOrders: 1,
+        totalNetRevenue: 1,
+        totalQty: 1
+      }
+    },
+    {
+      $lookup: {
+        from: 'kpis',
+        let: { channelId: '$_id' },
+        pipeline: [
+          {
+            $match: {
+              $expr: {
+                $and: [
+                  { $eq: ['$type', EnumKPIType.CHANNEL] },
+                  { $eq: ['$targetId', '$$channelId'] },
+                  // { $gte: ['$timeframe', startOrderDate.slice(0,7) ] },
+                  // { $lte: ['$timeframe', endOrderDate.slice(0,7) ] },
+                ]
+              }
+            }
           }
-        }}
-      ],
-      as: 'kpis'
-    }}
+        ],
+        as: 'kpis'
+      }
+    }
   ])
   // console.log("channelStats", JSON.stringify(channelStats, null, 2));
 
 
   const summaryStats = (await Order.aggregate([
-    { $match: {
-      $expr: {
-        $and: [
-          { $gte: ["$orderDate", new Date(startOrderDate)] },
-          { $lte: ["$orderDate", new Date(endOrderDate)] },
-          { $cond: [
-            { $eq: [brand, 'all'] },
-            true,
-            { $eq: ["$brandId", brand] }
-          ]},
-          { $or: [
-            { $eq: [isAdmin, true] },
-            { $in: ["$partnerId", partners] },
-            { $in: ["$brandId", user.assignedBrands]},
-          ]}
-          
-        ]
-      }
-    }},
-    { $addFields: {
-      totalListRevenue: {
-        $sum: {
-          $map: {
-            input: "$items",
-            as: "item",
-            in: { $sum: { $multiply: ["$$item.listprice", "$$item.qty"] }}
-          }
-        }
-      },
-      totalNetRevenue: {
-        $sum: {
-          $map: {
-            input: "$items",
-            as: "item",
-            in: { $sum: { $multiply: ["$$item.netprice", "$$item.qty"] }}
-          }
+    {
+      $match: {
+        $expr: {
+          $and: [
+            { $gte: ["$orderDate", new Date(startOrderDate)] },
+            { $lte: ["$orderDate", new Date(endOrderDate)] },
+            {
+              $cond: [
+                { $eq: [brand, 'all'] },
+                true,
+                { $eq: ["$brandId", brand] }
+              ]
+            },
+            {
+              $or: [
+                { $eq: [isAdmin, true] },
+                { $in: ["$partnerId", partners] },
+                { $in: ["$brandId", user.assignedBrands] },
+              ]
+            }
+
+          ]
         }
       }
-    }},
-    { $group: {
-      _id: null,
-      totalOrders: { $sum: 1 },
-      totalListRevenue: { $sum: "$totalListRevenue" },
-      totalNetRevenue: { $sum: "$totalNetRevenue" },
-    }},
-    { $project: {
-      _id: 0, totalOrders: 1, totalListRevenue: 1, totalNetRevenue: 1
-    }}
+    },
+    {
+      $addFields: {
+        totalListRevenue: {
+          $sum: {
+            $map: {
+              input: "$items",
+              as: "item",
+              in: { $sum: { $multiply: ["$$item.listprice", "$$item.qty"] } }
+            }
+          }
+        },
+        totalNetRevenue: {
+          $sum: {
+            $map: {
+              input: "$items",
+              as: "item",
+              in: { $sum: { $multiply: ["$$item.netprice", "$$item.qty"] } }
+            }
+          }
+        }
+      }
+    },
+    {
+      $group: {
+        _id: null,
+        totalOrders: { $sum: 1 },
+        totalListRevenue: { $sum: "$totalListRevenue" },
+        totalNetRevenue: { $sum: "$totalNetRevenue" },
+      }
+    },
+    {
+      $project: {
+        _id: 0, totalOrders: 1, totalListRevenue: 1, totalNetRevenue: 1
+      }
+    }
 
   ]))[0] || { totalOrders: 0, totalListRevenue: 0, totalNetRevenue: 0 };
 
   const partnerStats = await Order.aggregate([
-    { $match: {
-      $expr: {
-        $and: [
-          { $gte: ["$orderDate", new Date(startOrderDate)] },
-          { $lte: ["$orderDate", new Date(endOrderDate)] },
-          { $cond: [
-            { $eq: [brand, 'all'] },
-            true,
-            { $eq: ["$brandId", brand] }
-          ]},
-          { $or: [
-            { $eq: [isAdmin, true] },
-            { $in: ["$partnerId", partners] },
-            { $in: ["$brandId", user.assignedBrands]},
-          ]}
-          
-        ]
-      }
-    }},
-    { $addFields: {
-      totalListRevenue: {
-        $sum: {
-          $map: {
-            input: "$items",
-            as: "item",
-            in: { $sum: { $multiply: ["$$item.listprice", "$$item.qty"] }}
-          }
-        }
-      },
-      totalNetRevenue: {
-        $sum: {
-          $map: {
-            input: "$items",
-            as: "item",
-            in: { $sum: { $multiply: ["$$item.netprice", "$$item.qty"] }}
-          }
-        }
-      },
-      totalQty: {
-        $sum: {
-          $map: {
-            input: "$items",
-            as: "item",
-            in: { $sum: "$$item.qty"}
-          }
-        }}
-      
-    }},
+    {
+      $match: {
+        $expr: {
+          $and: [
+            { $gte: ["$orderDate", new Date(startOrderDate)] },
+            { $lte: ["$orderDate", new Date(endOrderDate)] },
+            {
+              $cond: [
+                { $eq: [brand, 'all'] },
+                true,
+                { $eq: ["$brandId", brand] }
+              ]
+            },
+            {
+              $or: [
+                { $eq: [isAdmin, true] },
+                { $in: ["$partnerId", partners] },
+                { $in: ["$brandId", user.assignedBrands] },
+              ]
+            }
 
-    { $lookup: {
-      from: "partners",
-      localField: "partnerId",
-      foreignField: "_id",
-      as: "partner"
-    }},
+          ]
+        }
+      }
+    },
+    {
+      $addFields: {
+        totalListRevenue: {
+          $sum: {
+            $map: {
+              input: "$items",
+              as: "item",
+              in: { $sum: { $multiply: ["$$item.listprice", "$$item.qty"] } }
+            }
+          }
+        },
+        totalNetRevenue: {
+          $sum: {
+            $map: {
+              input: "$items",
+              as: "item",
+              in: { $sum: { $multiply: ["$$item.netprice", "$$item.qty"] } }
+            }
+          }
+        },
+        totalQty: {
+          $sum: {
+            $map: {
+              input: "$items",
+              as: "item",
+              in: { $sum: "$$item.qty" }
+            }
+          }
+        }
+
+      }
+    },
+
+    {
+      $lookup: {
+        from: "partners",
+        localField: "partnerId",
+        foreignField: "_id",
+        as: "partner"
+      }
+    },
     { $unwind: "$partner" },
-    { $group: {
-      _id: "$partnerId",
-      partnerName: { $first: "$partner.name" },
-      totalOrders: { $sum: 1 },
-      totalListRevenue: { $sum: "$totalListRevenue" },
-      totalNetRevenue: { $sum: "$totalNetRevenue" },
-      totalQty: { $sum: "$totalQty" }
-    }},
+    {
+      $group: {
+        _id: "$partnerId",
+        partnerName: { $first: "$partner.name" },
+        totalOrders: { $sum: 1 },
+        totalListRevenue: { $sum: "$totalListRevenue" },
+        totalNetRevenue: { $sum: "$totalNetRevenue" },
+        totalQty: { $sum: "$totalQty" }
+      }
+    },
     { $sort: { totalNetRevenue: -1 } },
   ])
-  return { success: true, data: {totalOrders: summaryStats.totalOrders, totalListRevenue: summaryStats.totalListRevenue, totalNetRevenue: summaryStats.totalNetRevenue, totalPartners: partnerStats.length, channelStats: channelStats, partnerStats: partnerStats} };
+  return { success: true, data: { totalOrders: summaryStats.totalOrders, totalListRevenue: summaryStats.totalListRevenue, totalNetRevenue: summaryStats.totalNetRevenue, totalPartners: partnerStats.length, channelStats: channelStats, partnerStats: partnerStats } };
 
 })
 
-const useKPIs = routeLoader$(async ({sharedMap}) => {
+const useKPIs = routeLoader$(async ({ sharedMap }) => {
   const user = sharedMap.get("user");
   if (!user) return [];
 
@@ -302,12 +356,12 @@ const useKPIs = routeLoader$(async ({sharedMap}) => {
   const rawKpis = isAdmin
     ? await KPI.find({}).lean()
     : await KPI.find({
-        $or: [
-          { type: EnumKPIType.CHANNEL },
-          { type: EnumKPIType.PARTNER },
-          { $and: [{ type: EnumKPIType.USER }, { targetId: String(user._id) }] }
-        ]
-      }).lean();
+      $or: [
+        { type: EnumKPIType.CHANNEL },
+        { type: EnumKPIType.PARTNER },
+        { $and: [{ type: EnumKPIType.USER }, { targetId: String(user._id) }] }
+      ]
+    }).lean();
 
   const results: any[] = [];
   for (const kpi of rawKpis) {
@@ -339,7 +393,8 @@ const useKPIs = routeLoader$(async ({sharedMap}) => {
       if (partnerIds.length > 0) {
         const agg = await Order.aggregate([
           { $match: { orderDate: { $gte: startDate, $lte: endDate }, partnerId: { $in: partnerIds } } },
-          { $addFields: {
+          {
+            $addFields: {
               totalNetRevenue: {
                 $sum: {
                   $map: {
@@ -360,14 +415,17 @@ const useKPIs = routeLoader$(async ({sharedMap}) => {
       const partnerName = await Partner.findOne({ _id: kpi.targetId }).then(p => p?.name || '');
       const agg = await Order.aggregate([
         { $match: { orderDate: { $gte: startDate, $lte: endDate }, partnerId: kpi.targetId } },
-        { $lookup: {
+        {
+          $lookup: {
             from: 'partners',
             pipeline: [{
-                $match: { _id: kpi.targetId }
+              $match: { _id: kpi.targetId }
             }],
             as: 'partner'
-        }},
-        { $addFields: {
+          }
+        },
+        {
+          $addFields: {
             totalNetRevenue: {
               $sum: {
                 $map: {
@@ -387,14 +445,17 @@ const useKPIs = routeLoader$(async ({sharedMap}) => {
       const userName = await User.findOne({ _id: kpi.targetId }).then(u => u?.name || '');
       const agg = await Order.aggregate([
         { $match: { orderDate: { $gte: startDate, $lte: endDate }, userId: kpi.targetId } },
-        { $lookup: {
+        {
+          $lookup: {
             from: 'users',
             pipeline: [{
-                $match: { _id: kpi.targetId }
+              $match: { _id: kpi.targetId }
             }],
             as: 'user'
-        }},
-        { $addFields: {
+          }
+        },
+        {
+          $addFields: {
             totalNetRevenue: {
               $sum: {
                 $map: {
@@ -427,9 +488,9 @@ export default component$(() => {
   const brands = useBrands();
   const filter = useStore({ brand: 'all', timeRangeType: 'today', startDate: '', endDate: '' });
   const stats = useSignal<any>({ totalOrders: 0, totalListRevenue: 0, totalNetRevenue: 0, totalPartners: 0, channelStats: [], partnerStats: [] });
-  useTask$(async ({track, cleanup}) => {
+  useTask$(async ({ track, cleanup }) => {
     track(() => [filter.brand, filter.timeRangeType, filter.startDate, filter.endDate]);
-    
+
     if (isServer) {
       const res = await useGlobalStats(filter.timeRangeType, filter.brand, filter.startDate, filter.endDate);
       if (res.success) {
@@ -442,9 +503,9 @@ export default component$(() => {
       if (res.success) {
         stats.value = res.data;
       }
-      else {
-        alert(res.message);
-      }
+      // else {
+      //   alert(res.message);
+      // }
     }, 500);
 
     cleanup(() => clearTimeout(id));
@@ -452,11 +513,11 @@ export default component$(() => {
 
 
   const chartRef = useSignal<Element>();
-  
-  useVisibleTask$(({track}) => {
+
+  useVisibleTask$(({ track }) => {
     track(() => stats.value);
     const charts = new ApexCharts(chartRef.value, {
-      chart: {type: 'pie', height: 300},
+      chart: { type: 'pie', height: 300 },
       series: stats.value.channelStats.map((c: any) => c.totalNetRevenue),
       labels: stats.value.channelStats.map((c: any) => c.channelName),
     });
@@ -464,9 +525,9 @@ export default component$(() => {
     return () => {
       charts.destroy();
     };
-    });
-    
-    
+  });
+
+
   // })
   // const globalStats = useGlobalStats(filter.timeRangeType, filter.brand, filter.startDate, filter.endDate);
   return (
@@ -480,32 +541,32 @@ export default component$(() => {
       <GlobalStats stats={stats.value} />
       <ChannelStats stats={stats.value.channelStats} />
       <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 lg:col-span-1 flex flex-col justify-center">
-            <h3 class="text-gray-800 font-bold mb-6 text-center">Tỷ Trọng Theo Kênh</h3>
-            <div ref={chartRef} class="h-64 w-full"></div>
-          </div>
+        <div class="bg-white rounded-xl shadow-sm p-6 border border-gray-100 lg:col-span-1 flex flex-col justify-center">
+          <h3 class="text-gray-800 font-bold mb-6 text-center">Tỷ Trọng Theo Kênh</h3>
+          <div ref={chartRef} class="h-64 w-full"></div>
+        </div>
 
 
-          <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
-            <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
-               <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2"><LuUsers class="w-5 h-5 text-indigo-600" /> Đối Tác</h2>
-            </div>
-            <PartnerTable partners={stats.value.partnerStats} />
+        <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden lg:col-span-2">
+          <div class="px-6 py-4 border-b border-gray-100 bg-gray-50 flex justify-between items-center">
+            <h2 class="text-lg font-bold text-gray-800 flex items-center gap-2"><LuUsers class="w-5 h-5 text-indigo-600" /> Đối Tác</h2>
           </div>
-        
+          <PartnerTable partners={stats.value.partnerStats} />
+        </div>
+
       </div>
 
       <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 bg-indigo-50 flex justify-between items-center">
           <h2 class="text-lg font-bold text-indigo-900 flex items-center gap-2">
-           <LuBriefcase class="w-5 h-5" />
-           KPI
+            <LuBriefcase class="w-5 h-5" />
+            KPI
           </h2>
         </div>
         <KPITable kpi={kpis.value} />
       </div>
     </div>
-    
+
   );
 });
 

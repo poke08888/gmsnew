@@ -39,18 +39,16 @@ const useCurrentUser = routeLoader$(async ({cookie, sharedMap}) => {
 })
 
 const useOrders = server$(async function(page: number, limit: number, search: { text: string, partnerId: string, userId: string, startDate: string, endDate: string }) {
-    const authToken = this.cookie.get('auth_token')?.value;
-
-    if (!authToken) {
-        return [];
+    const session = this.sharedMap.get('session');
+    if (!session) {
+        return { orders: [], total: 0 };
     }
 
-    // Verify token
-    const isValid = await verifyJWT(authToken);
-    if (!isValid) {
-        return [];
+    const user = await User.findOne({ _id: session.user._id });
+    if (!user) {
+        return { orders: [], total: 0 };
     }
-    const user = isValid as InterfaceUser;
+    // const user = isValid as InterfaceUser;
 
     const skip = (page - 1) * limit;
     const filterOperations: any = {}

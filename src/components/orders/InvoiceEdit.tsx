@@ -13,6 +13,7 @@ import { Order } from "~/models/order.model";
 import { verifyJWT } from "~/services/hash.service";
 // import { User } from "~/models/user.model";
 import { Partner } from "~/models/partner.model";
+import { User } from "~/models/user.model";
 interface Props {
     orderAction: { order: InterfaceOrder | null, action: string };
 }
@@ -34,20 +35,24 @@ const loadOptions = server$(async () => {
 const saveToServer = server$(async function(order: InterfaceOrder) {
   try{
 
-    const auth_token = this.cookie.get('auth_token')?.value;
-    if (!auth_token) {
-        return false;
-    }
-    const user = await verifyJWT(auth_token);
-    if (!user) {
+    const session = this.sharedMap.get('session');
+    if (!session) {
         return false;
     }
     await connectDB();
+    const user = await User.findOne({ _id: session.user._id });
+    if (!user) {
+        return false;
+    }
+    
     
     const partner = await Partner.findById(order.partnerId).lean();
+    if (!partner) {
+      return false;
+    }
     const dbOrder = await Order.findById(order._id).lean();
 
-    if (user.role != EnumUserRole.DIRECTOR && dbOrder?.userId != user._id && !user.assignedChannels?.includes(partner?.channelId) && !user.assignedBrands?.includes(order.brandId)) {
+    if (user.role != EnumUserRole.DIRECTOR && dbOrder?.userId != user._id && !user.assignedChannels?.includes(partner?.channelId) && !user.assignedBrands?.includes(order.brandId as string)) {
       return false;
     }
     

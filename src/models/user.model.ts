@@ -6,10 +6,10 @@ const UserSchema = new Schema({
     password: { type: String, required: true },
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
-    role: { type: String, enum: Object.values(EnumUserRole), default: EnumUserRole.STAFF },
-    assignedChannels: { type: [{ type: String, ref: 'channels' }], default: [] },
-    assignedBrands: { type: [{ type: String, ref: 'brands' }], default: [] },
-    customPermissions: { type: [String], default: [] },
+    role: { type: String, enum: Object.values(EnumUserRole), default: () => EnumUserRole.STAFF },
+    assignedChannels: { type: [{ type: String, ref: 'channels' }], default: () => [] },
+    assignedBrands: { type: [{ type: String, ref: 'brands' }], default: () => [] },
+    customPermissions: { type: [String], default: () => [] },
 }, { timestamps: true })
 
 export const User = model('users', UserSchema);

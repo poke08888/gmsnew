@@ -14,36 +14,38 @@ export const handleLogout = routeAction$(async (_, {cookie, redirect}) => {
 
 
 export const onGet: RequestHandler = async ({ cookie, redirect, sharedMap }) => {
-  const authToken = cookie.get('auth_token')?.value;
-
-  if (!authToken) {
-    // Nếu không có token, chuyển hướng đến trang đăng nhập
-    throw redirect(302, '/login');
-  }
-
-    const isValid = await verifyJWT(authToken);
-    // console.log('isValid', isValid);
-    if (!isValid) {
-      // Nếu token không hợp lệ, chuyển hướng đến trang đăng nhập
-      throw redirect(302, '/login');
+    const session = sharedMap.get('session');
+    if (!session) {
+        throw redirect(302, '/login');
     }
-
     await connectDB();
-    sharedMap.set('user', isValid);
-
+    const user = await User.findById(session.user._id);
+    if (!user) {
+        throw redirect(302, '/login');
+    }
+    sharedMap.set('user', user.toObject());
   // Nếu có token, tiếp tục tải trang dashboard
 };
 
-const useCurrentUser = routeLoader$(async ({sharedMap}) => {
-    const user = sharedMap.get('user');
-    return user;
+export const useCurrentUser = routeLoader$(async ({sharedMap, redirect}) => {
+    const session = sharedMap.get('session');
+    if (!session) {
+        throw redirect(302, '/login');
+    }
+    await connectDB();
+    const user = await User.findById(session.user._id);
+    if (!user) {
+        throw redirect(302, '/login');
+    }
+    return user.toObject();
+
 })
 
 export default component$(() => {
     const currentUser = useCurrentUser()
     return (
         <div class="flex bg-gray-50 min-h-screen font-sans">
-            <Sidebar currentUser={currentUser}/>
+            <Sidebar/>
             <div class="flex-1 ml-64">
                 <main class="p-8 max-w-7xl mx-auto">
                     <Slot />

@@ -24,6 +24,7 @@ const OrderSchema = new Schema({
             grossprice: { type: Number, required: true },
         }
     ],
+    orderCode: { type: String, required: true, default: () => "" },
 }, { timestamps: true, toJSON: { virtuals: true }, toObject: { virtuals: true } });
 
 

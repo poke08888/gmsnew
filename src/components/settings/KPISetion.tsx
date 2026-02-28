@@ -5,7 +5,8 @@ import { EnumKPIType, InterfaceUser, InterfaceBrand, InterfaceChannel, Interface
 
 import { addKPI, deleteKPI } from "~/services/kpi.service";
 import { verifyJWT } from "~/services/hash.service";
-
+import { User } from "~/models/user.model";
+import { connectDB } from "~/libs/db";
 interface Props {
     users: InterfaceUser[],
     partners: InterfacePartner[],
@@ -15,16 +16,15 @@ interface Props {
 
 const saveKPI = server$(async function(type: EnumKPIType, targetId: string, period: string, timeframe: string, amount: number) {
 
-    const auth_token = this.cookie.get('auth_token')?.value;
-    if (!auth_token) {
+    const session = this.sharedMap.get('session');
+    if (!session) {
         return false;
     }
-
-    const isValid = await verifyJWT(auth_token);
+    await connectDB();
+    const isValid = await User.findOne({ _id: session.user._id });
     if (!isValid) {
         return false;
     }
-
     if (isValid.role != EnumUserRole.DIRECTOR && !isValid.customPermissions.includes(EnumUserCustomPermission.MANAGE_KPIS)) return false;
 
     if (!/^\d{4}-(0[1-9]|1[0-2])$/.test(timeframe)) return false;
@@ -55,12 +55,12 @@ const saveKPI = server$(async function(type: EnumKPIType, targetId: string, peri
 })
 
 const removeKPI = server$(async function(kpiId: string) {
-    const auth_token = this.cookie.get('auth_token')?.value;
-    if (!auth_token) {
+    const session = this.sharedMap.get('session');
+    if (!session) {
         return false;
     }
-
-    const isValid = await verifyJWT(auth_token);
+    await connectDB();
+    const isValid = await User.findOne({ _id: session.user._id });
     if (!isValid) {
         return false;
     }

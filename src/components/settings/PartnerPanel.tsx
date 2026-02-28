@@ -9,18 +9,24 @@ import { CreateOrUpdateBilling } from '~/services/billing.service';
 import { CreateOrUpdateWarehouse } from '~/services/warehouse.service';
 import { CreateOrUpdatePartner } from '~/services/partner.service';
 import { cp } from 'fs';
+import { connectDB } from '~/libs/db';
+import { User } from '~/models/user.model';
 interface Props {
     modalPartnerData: any;
     channels: InterfaceChannel[];
 }
 
 const addPartner = server$(async function (partnerData: any) {
-    const auth = this.cookie.get('auth_token')?.value || '';
-    
-    const isAuth = await verifyJWT(auth);
+    const session = this.sharedMap.get('session');
+    if (!session) {
+        return { success: false, error: 'Unauthorized' };
+    }
+    await connectDB();
+    const isAuth = await User.findOne({ _id: session.user._id });
     if (!isAuth) {
         return { success: false, error: 'Unauthorized' };
     }
+    
     let billings = partnerData.billings || [];
     let warehouses  = partnerData.warehouses || [];
     if (billings.length) {

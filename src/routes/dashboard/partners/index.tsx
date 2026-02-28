@@ -9,17 +9,22 @@ import { Channel } from "~/models/channel.model";
 import { connectDB } from "~/libs/db";
 import { verifyJWT } from "~/services/hash.service";
 import { Brand } from "~/models/brand.model";
-const useBrands = routeLoader$(async ({sharedMap}) => {
+import { User } from "~/models/user.model";
+const useBrands = routeLoader$(async ({ sharedMap }) => {
     const user = sharedMap.get("user");
     await connectDB();
     return await Brand.find({}).lean();
 })
 
 const GetOrdersAndPartners = server$(async function (brandId: string) {
-    const auth_token = this.cookie.get("auth_token")?.value || "";
-    const user = await verifyJWT(auth_token);
+    const session = this.sharedMap.get('session');
+    if (!session) {
+        return { success: false, error: 'Unauthorized' };
+    }
+    await connectDB();
+    const user = await User.findOne({ _id: session.user._id });
     if (!user) return [];
-    
+
     let isAdmin = false
     if (user.role == EnumUserRole.DIRECTOR || user.customPermissions.includes(EnumUserCustomPermission.VIEW_ALL_DATA)) {
         isAdmin = true;
@@ -33,7 +38,7 @@ const GetOrdersAndPartners = server$(async function (brandId: string) {
             $or: [
                 { brandId: { $in: user.assignedBrands } },
                 { userId: user._id },
-                
+
             ]
         };
     }
@@ -46,25 +51,25 @@ const GetOrdersAndPartners = server$(async function (brandId: string) {
         };
     }
     // assign permissions
-    
+
     return await Order.aggregate([
         { $match: matchQuery },
         {
             $group: {
-                _id: "$partnerId", 
+                _id: "$partnerId",
                 orderCount: { $sum: 1 }, // Tổng số đơn hàng của partner này
-                totalNetValue: { 
+                totalNetValue: {
                     $sum: {
                         $reduce: {
-                        input: "$items",
-                        initialValue: 0,
-                        in: { $add: ["$$value", { $multiply: ["$$this.qty", "$$this.netprice"] }] }
+                            input: "$items",
+                            initialValue: 0,
+                            in: { $add: ["$$value", { $multiply: ["$$this.qty", "$$this.netprice"] }] }
                         }
                     } // Tổng tiền (tính trực tiếp từ mảng items)
                 },
                 lastOrderDate: { $max: "$orderDate" }, // Ngày đặt hàng gần nhất
                 // Lưu trữ danh sách ID đơn hàng nếu cần
-                orderIds: { $push: "$_id" } 
+                orderIds: { $push: "$_id" }
             }
         },
         {
@@ -106,7 +111,7 @@ export default component$(() => {
     const selectedBrandId = useSignal("all");
     const brands = useBrands();
     const orderPartners = useSignal<any[]>([]);
-    useTask$(async ({track}) => {
+    useTask$(async ({ track }) => {
         track(() => selectedBrandId.value);
         // console.log("Selected Brand ID:", selectedBrandId.value); 
         const orders = await GetOrdersAndPartners(selectedBrandId.value)
@@ -140,16 +145,16 @@ export default component$(() => {
                 <table class="min-w-full divide-y divide-gray-200">
                     <thead class="bg-gray-50">
                         <tr>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tên Đối Tác</th>
-                        <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Kênh</th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Doanh Thu</th>
-                        <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Số Đơn</th>
-                        <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Hành Động</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tên Đối Tác</th>
+                            <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Kênh</th>
+                            <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Doanh Thu</th>
+                            <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Số Đơn</th>
+                            <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Hành Động</th>
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
                         {orderPartners.value.map((partnerData: any) => (
-                            <tr onClick$={async () => {await nav(`/dashboard/partners/${partnerData._id}`)}} key={partnerData._id} class="hover:bg-indigo-50 cursor-pointer transition-colors">
+                            <tr onClick$={async () => { await nav(`/dashboard/partners/${partnerData._id}`) }} key={partnerData._id} class="hover:bg-indigo-50 cursor-pointer transition-colors">
                                 <td class="px-6 py-4 text-sm font-bold text-gray-900">{partnerData.partnerDetails?.name}</td>
                                 <td class="px-6 py-4 text-sm">
                                     <span class="bg-blue-100 text-blue-700 px-2 py-1 rounded text-xs font-bold">{partnerData.channelDetails?.name}</span>
@@ -158,7 +163,7 @@ export default component$(() => {
                                     {new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(partnerData.totalNetValue)}
                                 </td>
                                 <td class="px-6 py-4 text-right text-sm text-gray-700">{partnerData.orderCount}</td>
-                                 <td class="px-6 py-4 text-center">
+                                <td class="px-6 py-4 text-center">
                                     <LuChevronRight class="w-5 h-5 text-gray-400 inline-block" />
                                 </td>
                             </tr>

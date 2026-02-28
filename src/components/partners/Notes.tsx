@@ -4,15 +4,17 @@ import { LuMessageSquare, LuSend } from "@qwikest/icons/lucide";
 import { connectDB } from "~/libs/db";
 import { verifyJWT } from "~/services/hash.service";
 import { Partner } from "~/models/partner.model";
+import { User } from "~/models/user.model";
 interface Props {
     notes: any[],
     partnerId?: string,
 }
 
 const addNote = server$(async function(partnerId: string, content: string) {
-    const auth_token = this.cookie.get("auth_token")?.value || "";
-    // Verify user
-    const user = await verifyJWT(auth_token);
+    const session = this.sharedMap.get('session');
+    if (!session) return { success: false, message: "Unauthorized" };
+
+    const user = await User.findOne({ _id: session.user._id });
     if (!user) return { success: false, message: "Unauthorized" };
 
     await connectDB();
