@@ -395,18 +395,18 @@ const useKPIs = routeLoader$(async ({ sharedMap }) => {
           { $match: { orderDate: { $gte: startDate, $lte: endDate }, partnerId: { $in: partnerIds } } },
           {
             $addFields: {
-              totalNetRevenue: {
+              totalListRevenue: {
                 $sum: {
                   $map: {
                     input: "$items",
                     as: "item",
-                    in: { $multiply: ["$$item.netprice", "$$item.qty"] }
+                    in: { $multiply: ["$$item.listprice", "$$item.qty"] }
                   }
                 }
               }
             }
           },
-          { $group: { _id: null, total: { $sum: "$totalNetRevenue" } } },
+          { $group: { _id: null, total: { $sum: "$totalListRevenue" } } },
         ]);
         currentValue = agg[0]?.total || 0;
         (kpi as any).name = channelName
@@ -426,18 +426,18 @@ const useKPIs = routeLoader$(async ({ sharedMap }) => {
         },
         {
           $addFields: {
-            totalNetRevenue: {
+            totalListRevenue: {
               $sum: {
                 $map: {
                   input: "$items",
                   as: "item",
-                  in: { $multiply: ["$$item.netprice", "$$item.qty"] }
+                  in: { $multiply: ["$$item.listprice", "$$item.qty"] }
                 }
               }
             }
           }
         },
-        { $group: { _id: null, total: { $sum: "$totalNetRevenue" }, name: { $first: "$partner.name" } } }
+        { $group: { _id: null, total: { $sum: "$totalListRevenue" }, name: { $first: "$partner.name" } } }
       ]);
       currentValue = agg[0]?.total || 0;
       (kpi as any).name = partnerName;
@@ -456,18 +456,18 @@ const useKPIs = routeLoader$(async ({ sharedMap }) => {
         },
         {
           $addFields: {
-            totalNetRevenue: {
+            totalListRevenue: {
               $sum: {
                 $map: {
                   input: "$items",
                   as: "item",
-                  in: { $multiply: ["$$item.netprice", "$$item.qty"] }
+                  in: { $multiply: ["$$item.listprice", "$$item.qty"] }
                 }
               }
             }
           }
         },
-        { $group: { _id: null, total: { $sum: "$totalNetRevenue" }, name: { $first: "$user.name" } } }
+        { $group: { _id: null, total: { $sum: "$totalListRevenue" }, name: { $first: "$user.name" } } }
       ]);
       currentValue = agg[0]?.total || 0;
       (kpi as any).name = userName;
