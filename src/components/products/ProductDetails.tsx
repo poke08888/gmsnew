@@ -11,26 +11,29 @@ export default component$(({ onOpenProductDetail, product }: Props) => {
     const chartByPartnerRevenueRef = useSignal<Element>();
     const chartByPartnerOrdersRef = useSignal<Element>();
     const chartByPartnerProductsRef = useSignal<Element>();
+    const topPartnersByRevenue = [...(product.partners ?? [])]
+        .sort((a: any, b: any) => b.totalNetRevenue - a.totalNetRevenue)
+        .slice(0, 10);
 
     useVisibleTask$(() => {
         const chartByPartnerRevenue = new ApexCharts(chartByPartnerRevenueRef.value, {
             chart: { type: 'pie', height: 300 },
-            series: product.partners.map((p: any) => p.totalNetRevenue),
-            labels: product.partners.map((p: any) => p.partnerName),
+            series: topPartnersByRevenue.map((p: any) => p.totalNetRevenue),
+            labels: topPartnersByRevenue.map((p: any) => p.partnerName),
         })
         chartByPartnerRevenue.render();
 
         const chartByPartnerOrders = new ApexCharts(chartByPartnerOrdersRef.value, {
             chart: { type: 'bar', height: 300 },
-            series: [{ data: product.partners.map((p: any) => p.totalOrders) }],
-            labels: product.partners.map((p: any) => p.partnerName),
+            series: [{ data: topPartnersByRevenue.map((p: any) => p.totalOrders) }],
+            labels: topPartnersByRevenue.map((p: any) => p.partnerName),
         })
         chartByPartnerOrders.render();
 
         const chartByPartnerProducts = new ApexCharts(chartByPartnerProductsRef.value, {
             chart: { type: 'pie', height: 300 },
-            series: product.partners.map((p: any) => p.totalQty),
-            labels: product.partners.map((p: any) => p.partnerName),
+            series: topPartnersByRevenue.map((p: any) => p.totalQty),
+            labels: topPartnersByRevenue.map((p: any) => p.partnerName),
         })
         chartByPartnerProducts.render();
         return () => {
@@ -108,7 +111,7 @@ export default component$(({ onOpenProductDetail, product }: Props) => {
                                 </tr>
                             </thead>
                             <tbody class="bg-white divide-y divide-gray-200">
-                                {product.partners.map((partner: any, index: number) => (
+                                {topPartnersByRevenue.map((partner: any) => (
                                     <tr
                                         class="hover:bg-indigo-50 cursor-pointer transition-colors"
                                     >

@@ -180,6 +180,8 @@ export default component$(() => {
     const filterBar = useStore({ text: '', brand: 'all', startDate: "", endDate: "", sortBy: 'revenue-desc' });
     const brands = useBrands();
     const products = useSignal({ success: false, data: null as any[] | null });
+    const currentPage = useSignal(1);
+    const pageSize = useSignal(10);
 
     const onOpenProductDetail = useStore({ isOpen: false, product: null as any | null });
 
@@ -189,6 +191,8 @@ export default component$(() => {
         track(() => filterBar.endDate);
         track(() => filterBar.sortBy);
         track(() => filterBar.text);
+
+        currentPage.value = 1;
 
         // You can add additional logic here to fetch or filter products based on the filterBar and searchText values.
         // console.log('Filters updated:', { ...filterBar, searchText: searchText.value });
@@ -241,7 +245,17 @@ export default component$(() => {
             </div>
 
             <FilterBar filterBar={filterBar} brands={brands.value} />
-            <ProductTable products={products?.value.data ?? []} onOpenProductDetail={onOpenProductDetail} />
+            <ProductTable
+                products={products?.value.data ?? []}
+                onOpenProductDetail={onOpenProductDetail}
+                currentPage={currentPage.value}
+                pageSize={pageSize.value}
+                onPageChange$={(page: number) => currentPage.value = page}
+                onPageSizeChange$={(size: number) => {
+                    pageSize.value = size;
+                    currentPage.value = 1;
+                }}
+            />
         </div>
     )
 })

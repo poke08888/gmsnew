@@ -1,10 +1,22 @@
 import { component$ } from "@builder.io/qwik";
-import { LuChevronRight } from "@qwikest/icons/lucide";
+import { LuChevronLeft, LuChevronRight } from "@qwikest/icons/lucide";
 interface Props {
     products: any[],
-    onOpenProductDetail: { isOpen: boolean, product: any }
+    onOpenProductDetail: { isOpen: boolean, product: any },
+    currentPage: number,
+    pageSize: number,
+    onPageChange$: (page: number) => void,
+    onPageSizeChange$: (size: number) => void,
 }
-export default component$(({ products, onOpenProductDetail }: Props) => {
+export default component$(({ products, onOpenProductDetail, currentPage, pageSize, onPageChange$, onPageSizeChange$ }: Props) => {
+    const totalProducts = products.length;
+    const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
+    const safeCurrentPage = Math.min(currentPage, totalPages);
+    const startIndex = (safeCurrentPage - 1) * pageSize;
+    const paginatedProducts = products.slice(startIndex, startIndex + pageSize);
+    const startItem = totalProducts === 0 ? 0 : startIndex + 1;
+    const endItem = Math.min(startIndex + pageSize, totalProducts);
+
     return (
         <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
             <div class="overflow-x-auto">
@@ -20,7 +32,7 @@ export default component$(({ products, onOpenProductDetail }: Props) => {
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        {products.map((product: any, index: number) => (
+                        {paginatedProducts.map((product: any) => (
                             <tr
                                 onClick$={() => {onOpenProductDetail.isOpen = true; onOpenProductDetail.product = product}}
                                 class="hover:bg-indigo-50 cursor-pointer transition-colors"
@@ -41,8 +53,59 @@ export default component$(({ products, onOpenProductDetail }: Props) => {
                                 </td>
                             </tr>
                         ))}
+                        {paginatedProducts.length === 0 && (
+                            <tr>
+                                <td colSpan={6} class="px-6 py-10 text-center text-sm text-gray-500">
+                                    Không có sản phẩm nào phù hợp.
+                                </td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
+            </div>
+            <div class="flex flex-col gap-3 border-t border-gray-100 px-6 py-4 text-sm text-gray-600 md:flex-row md:items-center md:justify-between">
+                <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                    <div class="flex items-center gap-2">
+                        <span>Hiển thị</span>
+                        <select
+                            value={pageSize}
+                            class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-indigo-500"
+                            onChange$={(e) => onPageSizeChange$(Number((e.target as HTMLSelectElement).value))}
+                        >
+                            <option value={10}>10</option>
+                            <option value={25}>25</option>
+                            <option value={100}>100</option>
+                        </select>
+                        <span>sản phẩm / trang</span>
+                    </div>
+                    <div>
+                        {startItem}-{endItem} / {totalProducts} sản phẩm
+                    </div>
+                </div>
+
+                <div class="flex items-center justify-end gap-2">
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={safeCurrentPage <= 1}
+                        onClick$={() => onPageChange$(safeCurrentPage - 1)}
+                    >
+                        <LuChevronLeft class="h-4 w-4" />
+                        Trước
+                    </button>
+                    <span class="min-w-[96px] text-center font-medium text-gray-700">
+                        Trang {safeCurrentPage}/{totalPages}
+                    </span>
+                    <button
+                        type="button"
+                        class="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                        disabled={safeCurrentPage >= totalPages}
+                        onClick$={() => onPageChange$(safeCurrentPage + 1)}
+                    >
+                        Sau
+                        <LuChevronRight class="h-4 w-4" />
+                    </button>
+                </div>
             </div>
         </div>
     )

@@ -2,7 +2,7 @@ import { component$, useSignal, useStore, useTask$ } from "@builder.io/qwik";
 
 import { EnumUserCustomPermission, EnumUserRole, InterfaceOrder, InterfaceUser } from "~/types/common";
 
-import { LuUsers, LuFilter, LuChevronRight } from "@qwikest/icons/lucide";
+import { LuUsers, LuFilter, LuChevronLeft, LuChevronRight } from "@qwikest/icons/lucide";
 import { routeLoader$, server$, useNavigate } from "@builder.io/qwik-city";
 import { Order } from "~/models/order.model";
 import { Channel } from "~/models/channel.model";
@@ -111,13 +111,24 @@ export default component$(() => {
     const selectedBrandId = useSignal("all");
     const brands = useBrands();
     const orderPartners = useSignal<any[]>([]);
+    const currentPage = useSignal(1);
+    const pageSize = useSignal(5);
     useTask$(async ({ track }) => {
         track(() => selectedBrandId.value);
+        currentPage.value = 1;
         // console.log("Selected Brand ID:", selectedBrandId.value); 
         const orders = await GetOrdersAndPartners(selectedBrandId.value)
         orderPartners.value = orders as any[];
         // console.log("Orders by Partners:", JSON.stringify(orders, null, 2));
     });
+
+    const totalPartners = orderPartners.value.length;
+    const totalPages = Math.max(1, Math.ceil(totalPartners / pageSize.value));
+    const safeCurrentPage = Math.min(currentPage.value, totalPages);
+    const startIndex = (safeCurrentPage - 1) * pageSize.value;
+    const paginatedPartners = orderPartners.value.slice(startIndex, startIndex + pageSize.value);
+    const startItem = totalPartners === 0 ? 0 : startIndex + 1;
+    const endItem = Math.min(startIndex + pageSize.value, totalPartners);
 
     return (
         <div class="space-y-6 animate-fade-in">
@@ -153,7 +164,7 @@ export default component$(() => {
                         </tr>
                     </thead>
                     <tbody class="bg-white divide-y divide-gray-200">
-                        {orderPartners.value.map((partnerData: any) => (
+                        {paginatedPartners.map((partnerData: any) => (
                             <tr onClick$={async () => { await nav(`/dashboard/partners/${partnerData._id}`) }} key={partnerData._id} class="hover:bg-indigo-50 cursor-pointer transition-colors">
                                 <td class="px-6 py-4 text-sm font-bold text-gray-900">{partnerData.partnerDetails?.name}</td>
                                 <td class="px-6 py-4 text-sm">
@@ -168,8 +179,62 @@ export default component$(() => {
                                 </td>
                             </tr>
                         ))}
+                        {paginatedPartners.length === 0 && (
+                            <tr>
+                                <td colSpan={5} class="px-6 py-10 text-center text-sm text-gray-500">
+                                    Không có đối tác nào phù hợp.
+                                </td>
+                            </tr>
+                        )}
                     </tbody>
                 </table>
+                <div class="flex flex-col gap-3 border-t border-gray-100 px-6 py-4 text-sm text-gray-600 md:flex-row md:items-center md:justify-between">
+                    <div class="flex flex-col gap-3 sm:flex-row sm:items-center">
+                        <div class="flex items-center gap-2">
+                            <span>Hiển thị</span>
+                            <select
+                                value={pageSize.value}
+                                class="rounded-lg border border-gray-300 bg-white px-3 py-2 text-sm text-gray-700 outline-none focus:border-indigo-500"
+                                onChange$={(e) => {
+                                    pageSize.value = Number((e.target as HTMLSelectElement).value);
+                                    currentPage.value = 1;
+                                }}
+                            >
+                                <option value={5}>5</option>
+                                <option value={10}>10</option>
+                                <option value={25}>25</option>
+                            </select>
+                            <span>đối tác / trang</span>
+                        </div>
+                        <div>
+                            {startItem}-{endItem} / {totalPartners} đối tác
+                        </div>
+                    </div>
+
+                    <div class="flex items-center justify-end gap-2">
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled={safeCurrentPage <= 1}
+                            onClick$={() => currentPage.value = safeCurrentPage - 1}
+                        >
+                            <LuChevronLeft class="h-4 w-4" />
+                            Trước
+                        </button>
+                        <span class="min-w-[96px] text-center font-medium text-gray-700">
+                            Trang {safeCurrentPage}/{totalPages}
+                        </span>
+                        <button
+                            type="button"
+                            class="inline-flex items-center gap-1 rounded-lg border border-gray-300 px-3 py-2 text-sm text-gray-700 transition-colors hover:bg-gray-50 disabled:cursor-not-allowed disabled:opacity-50"
+                            disabled={safeCurrentPage >= totalPages}
+                            onClick$={() => currentPage.value = safeCurrentPage + 1}
+                        >
+                            Sau
+                            <LuChevronRight class="h-4 w-4" />
+                        </button>
+                    </div>
+                </div>
             </div>
 
         </div>
