@@ -1,7 +1,7 @@
 //@ts-nocheck
 import { component$, useSignal } from "@builder.io/qwik";
 import { EnumUserRole, InterfaceOrder, InterfaceUser } from "~/types/common";
-import { LuEye as Eye, LuPencil as Edit, LuTrash2 as Trash2 } from "@qwikest/icons/lucide";
+import { LuEye as Eye, LuPencil as Edit, LuTrash2 as Trash2, LuPaperclip } from "@qwikest/icons/lucide";
 import { DeleteOrderById } from "~/services/order.service";
 import { server$ } from "@builder.io/qwik-city";
 import { verifyJWT } from "~/services/hash.service";
@@ -66,6 +66,7 @@ export default component$(({ ordersData, currentUser, orderAction }: Props) => {
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-center text-sm flex justify-center gap-2">
                                 <button onClick$={() => {orderAction.action = 'preview'; orderAction.order = order}} class="text-teal-600 hover:text-teal-900 bg-teal-50 p-2 rounded-lg"><Eye class="w-4 h-4" /></button>
+                                <button onClick$={() => {orderAction.action = 'order-slip'; orderAction.order = order}} class="text-amber-600 hover:text-amber-900 bg-amber-50 p-2 rounded-lg"><LuPaperclip class="w-4 h-4" /></button>
                                 {currentUser.role == EnumUserRole.DIRECTOR || currentUser._id == order.userId?._id || currentUser.assignedBrands.includes(typeof order.brandId === 'string' ? order.brandId : order.brandId?._id) || currentUser.assignedChannels.includes(order.partnerId?.channelId!) ? (
                                     <>
                                         <button onClick$={() => {orderAction.action = 'edit'; orderAction.order = order}} class="text-blue-600 hover:text-blue-900 bg-blue-50 p-2 rounded-lg"><Edit class="w-4 h-4" /></button>

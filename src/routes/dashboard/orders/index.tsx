@@ -5,6 +5,7 @@ import Filters from '~/components/orders/Filters';
 import OrderListTable from '~/components/orders/OrderListTable';
 import Pagination from '~/components/orders/Pagination';
 import InvoicePreview from '~/components/orders/InvoicePreview';
+import OrderSlipPreview from '~/components/orders/OrderSlipPreview';
 import InvoiceEdit from '~/components/orders/InvoiceEdit';
 import { LuFileText as FileText, LuRefreshCw as RefreshCw } from '@qwikest/icons/lucide';
 import { connectDB } from '~/libs/db';
@@ -128,6 +129,7 @@ export default component$(() => {
                 <Pagination total={orders.total} page={page} limit={limit} />
             </div>
             {handleOrderAction.action == "preview" && <InvoicePreview orderAction={handleOrderAction} />}
+            {handleOrderAction.action == "order-slip" && <OrderSlipPreview orderAction={handleOrderAction} />}
             {handleOrderAction.action == 'edit' && <InvoiceEdit orderAction={handleOrderAction} />}
         </div>
     )

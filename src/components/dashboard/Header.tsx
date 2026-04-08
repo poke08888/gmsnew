@@ -35,9 +35,9 @@ export default component$(({ brands, filter }: Props) => {
                 </div>
                 { filter.timeRangeType === "custom" && (
                     <div class="flex gap-2">
-                        <input type="date" value={filter.startDate} onClick$={(e) => filter.startDate = (e.target as HTMLInputElement).value} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2" />
+                        <input type="date" value={filter.startDate} onChange$={(e) => filter.startDate = (e.target as HTMLInputElement).value} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2" />
                         <span class="self-center">-</span>
-                        <input type="date" value={filter.endDate} onClick$={(e) => filter.endDate = (e.target as HTMLInputElement).value} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2" />
+                        <input type="date" value={filter.endDate} onChange$={(e) => filter.endDate = (e.target as HTMLInputElement).value} class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg p-2" />
                     </div>
                 )}
             </div>

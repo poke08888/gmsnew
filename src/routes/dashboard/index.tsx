@@ -364,11 +364,26 @@ const useKPIs = routeLoader$(async ({ sharedMap }) => {
       ]
     }).lean();
 
+  const now = new Date();
+  const currentYear = now.getFullYear();
+  const currentMonth = now.getMonth() + 1;
+  const currentQuarter = Math.floor((currentMonth - 1) / 3) + 1;
+
   const results: any[] = [];
   for (const kpi of rawKpis) {
     const [yrStr, moStr] = (kpi.timeframe || '').split('-');
-    const year = Number(yrStr) || new Date().getFullYear();
-    const month = Number(moStr) || 12;
+    const year = Number(yrStr) || currentYear;
+    const month = Number(moStr) || currentMonth;
+    const quarter = Math.floor((month - 1) / 3) + 1;
+
+    const isCurrentPeriod =
+      (kpi.period === 'MONTH' && year === currentYear && month === currentMonth) ||
+      (kpi.period === 'QUARTER' && year === currentYear && quarter === currentQuarter) ||
+      (kpi.period === 'YEAR' && year === currentYear);
+
+    if (!isCurrentPeriod) {
+      continue;
+    }
 
     let startDate: Date;
     let endDate: Date;
