@@ -342,6 +342,7 @@ const useGlobalStats = server$(async function (timeRangeType: string, brand: str
       }
     },
     { $sort: { totalNetRevenue: -1 } },
+    { $limit: 10 },
   ])
   return { success: true, data: { totalOrders: summaryStats.totalOrders, totalListRevenue: summaryStats.totalListRevenue, totalNetRevenue: summaryStats.totalNetRevenue, totalPartners: partnerStats.length, channelStats: channelStats, partnerStats: partnerStats } };
 

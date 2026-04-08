@@ -3,6 +3,10 @@ interface Props {
     partners: any[]
 }
 export default component$(({ partners }: Props) => {
+    const topPartners = [...partners]
+        .sort((a: any, b: any) => b.totalNetRevenue - a.totalNetRevenue)
+        .slice(0, 10);
+
     return (
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
@@ -16,7 +20,7 @@ export default component$(({ partners }: Props) => {
                     </tr>
                 </thead>    
                 <tbody class="bg-white divide-y divide-gray-200">
-                    {partners.map((partner, index) => (
+                    {topPartners.map((partner, index) => (
                         <tr key={index} class="hover:bg-gray-50">
                             <td class="px-6 py-3 text-sm text-gray-500">{index + 1}</td>
                             <td class="px-6 py-3 text-sm font-medium text-gray-900">{partner.partnerName}</td>
@@ -25,7 +29,7 @@ export default component$(({ partners }: Props) => {
                             <td class="px-6 py-3 text-sm text-gray-500 text-right">{new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(partner.totalNetRevenue)}</td>
                         </tr>
                     ))}
-                    {partners.length === 0 && (
+                    {topPartners.length === 0 && (
                         <tr><td colSpan={5} class="px-6 py-3 text-center text-sm text-gray-500">No partners found.</td></tr>
                     )}
                 </tbody>
