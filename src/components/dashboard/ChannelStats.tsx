@@ -10,8 +10,8 @@ export default component$(({ stats }: Props) => {
             {stats.map((stat) => (
                 <>
                     <KPICard title={`Kênh ${stat.channelName} doanh thu`} value={new Intl.NumberFormat('vi-VN', { style: 'currency', currency: 'VND' }).format(stat.totalNetRevenue)} />
-                    <KPICard title={`Kênh ${stat.channelName} order`} value={stat.totalOrders} />
-                    <KPICard title={`Kênh ${stat.channelName} số lượng`} value={stat.totalQty} />
+                    <KPICard title={`Kênh ${stat.channelName} order`} value={new Intl.NumberFormat('vi-VN').format(stat.totalOrders)} />
+                    <KPICard title={`Kênh ${stat.channelName} số lượng`} value={new Intl.NumberFormat('vi-VN').format(stat.totalQty)} />
                 </>
             ))}
         </div>
