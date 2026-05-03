@@ -167,6 +167,8 @@ const useProducts = server$(async function (text: string = '', startDate: string
                     sortBy == 'revenue-desc' ? { totalNetRevenue: -1 } :
                         sortBy == 'qty-asc' ? { totalQty: 1 } :
                             sortBy == 'qty-desc' ? { totalQty: -1 } :
+                                sortBy == 'orders-asc' ? { totalOrders: 1 } :
+                                sortBy == 'orders-desc' ? { totalOrders: -1 } :
                                 { totalNetRevenue: -1 }
         }
 
@@ -250,6 +252,8 @@ export default component$(() => {
                 onOpenProductDetail={onOpenProductDetail}
                 currentPage={currentPage.value}
                 pageSize={pageSize.value}
+                sortBy={filterBar.sortBy}
+                onSortChange$={(s: string) => { filterBar.sortBy = s; }}
                 onPageChange$={(page: number) => currentPage.value = page}
                 onPageSizeChange$={(size: number) => {
                     pageSize.value = size;

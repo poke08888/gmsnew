@@ -21,7 +21,27 @@ export default component$(({ file }: Props) => {
             range: 1,
             header: ["sku", "name", "qty", "listprice", "netprice", "grossprice"],
         });
-        file.value = {...file.value, items: jsonData};
+
+        // sanitize numeric fields (qty, listprice, netprice, grossprice)
+        const sanitized = jsonData.map((row: any) => {
+            const parseNumber = (v: any) => {
+                if (v === null || v === undefined || v === '') return 0;
+                if (typeof v === 'number') return v;
+                // remove all non-digit characters (currency symbols, spaces, dots as thousand separators, commas)
+                const digits = String(v).replace(/[^0-9\-]/g, '');
+                return digits === '' ? 0 : Number(digits);
+            }
+
+            return {
+                ...row,
+                qty: parseNumber(row.qty),
+                listprice: parseNumber(row.listprice),
+                netprice: parseNumber(row.netprice),
+                grossprice: parseNumber(row.grossprice),
+            } as InterfaceOrderItem;
+        });
+
+        file.value = {...file.value, items: sanitized};
     })
 
     return (

@@ -13,6 +13,8 @@ interface Props {
     ordersData: {orders: InterfaceOrder[], total: number},
     currentUser: InterfaceUser
     orderAction: { action: string, order: InterfaceOrder | null}
+    sortBy?: string,
+    onSortChange$?: (sortBy: string) => void,
 }
 const deleteOrder = server$(async function(orderId: string) {
     const session = this.sharedMap.get('session');
@@ -38,25 +40,43 @@ const deleteOrder = server$(async function(orderId: string) {
     
     return true;
 })
-export default component$(({ ordersData, currentUser, orderAction }: Props) => {
+export default component$(({ ordersData, currentUser, orderAction, sortBy, onSortChange$ }: Props) => {
     return (
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Mã Đơn</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Ngày Đặt</th>
-                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Ngày Giao</th>
+                        <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Tên / Mã Đơn</th>
+                        <th
+                            class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase cursor-pointer select-none"
+                            onClick$={() => onSortChange$ && onSortChange$((sortBy === 'orderDate-desc') ? 'orderDate-asc' : 'orderDate-desc')}
+                        >
+                            Ngày Đặt
+                            <span class="ml-2">{sortBy?.startsWith('orderDate') ? (sortBy?.endsWith('desc') ? '▼' : '▲') : ''}</span>
+                        </th>
+                        <th
+                            class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase cursor-pointer select-none"
+                            onClick$={() => onSortChange$ && onSortChange$((sortBy === 'deliveryDate-desc') ? 'deliveryDate-asc' : 'deliveryDate-desc')}
+                        >
+                            Ngày Giao
+                            <span class="ml-2">{sortBy?.startsWith('deliveryDate') ? (sortBy?.endsWith('desc') ? '▼' : '▲') : ''}</span>
+                        </th>
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Đối Tác</th>
                         <th class="px-6 py-3 text-left text-xs font-bold text-gray-500 uppercase">Sales Rep</th>
-                        <th class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase">Doanh Thu</th>
+                        <th
+                            class="px-6 py-3 text-right text-xs font-bold text-gray-500 uppercase cursor-pointer select-none"
+                            onClick$={() => onSortChange$ && onSortChange$((sortBy === 'revenue-desc') ? 'revenue-asc' : 'revenue-desc')}
+                        >
+                            Doanh Thu
+                            <span class="ml-2">{sortBy?.startsWith('revenue') ? (sortBy?.endsWith('desc') ? '▼' : '▲') : ''}</span>
+                        </th>
                         <th class="px-6 py-3 text-center text-xs font-bold text-gray-500 uppercase">Hành Động</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     {ordersData.orders.map(order => (
                         <tr key={order._id}>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">{order._id}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">{order.name ? order.name : (order.orderCode || order._id)}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{Intl.DateTimeFormat('en-US').format(new Date(order.orderDate))}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{Intl.DateTimeFormat('en-US').format(new Date(order.deliveryDate))}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">{typeof order.partnerId === 'string' ? order.partnerId : order.partnerId?.name || ""}</td>

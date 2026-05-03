@@ -95,10 +95,10 @@ export default component$(({ modelEditUser, channels, brands }: Props) => {
 
     // await UpdateUserPermission(modelEditUser.value.user);
     const { _id, name, username, email, role, assignedChannels, assignedBrands, customPermissions } = modelEditUser.value.user;
-    console.log('Submitting updated permissions for user:', assignedChannels, assignedBrands, customPermissions);
+    // console.log('Submitting updated permissions for user:', assignedChannels, assignedBrands, customPermissions);
 
     const result = await updateUserAction.submit({ _id, name, username, email, role, assignedChannels, assignedBrands, customPermissions });
-    console.log('Update user result:', result);
+    // console.log('Update user result:', result);
     if (!result?.value.success) {
       alert('Lỗi khi cập nhật người dùng: ' + result?.value.error);
     }

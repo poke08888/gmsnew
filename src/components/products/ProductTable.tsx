@@ -7,8 +7,10 @@ interface Props {
     pageSize: number,
     onPageChange$: (page: number) => void,
     onPageSizeChange$: (size: number) => void,
+    sortBy?: string,
+    onSortChange$?: (sortBy: string) => void,
 }
-export default component$(({ products, onOpenProductDetail, currentPage, pageSize, onPageChange$, onPageSizeChange$ }: Props) => {
+export default component$(({ products, onOpenProductDetail, currentPage, pageSize, onPageChange$, onPageSizeChange$, sortBy, onSortChange$ }: Props) => {
     const totalProducts = products.length;
     const totalPages = Math.max(1, Math.ceil(totalProducts / pageSize));
     const safeCurrentPage = Math.min(currentPage, totalPages);
@@ -25,9 +27,27 @@ export default component$(({ products, onOpenProductDetail, currentPage, pageSiz
                         <tr>
                             <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SKU</th>
                             <th class="px-6 py-4 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tên Sản Phẩm</th>
-                            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Số Lượng Bán</th>
-                            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Doanh Thu (Sau CK)</th>
-                            <th class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Số Lần Xuất Hiện</th>
+                            <th
+                                class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none"
+                                onClick$={() => onSortChange$ && onSortChange$((sortBy === 'qty-desc') ? 'qty-asc' : 'qty-desc')}
+                            >
+                                Số Lượng Bán
+                                <span class="ml-2">{sortBy?.startsWith('qty') ? (sortBy?.endsWith('desc') ? '▼' : '▲') : ''}</span>
+                            </th>
+                            <th
+                                class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none"
+                                onClick$={() => onSortChange$ && onSortChange$((sortBy === 'revenue-desc') ? 'revenue-asc' : 'revenue-desc')}
+                            >
+                                Doanh Thu (Sau CK)
+                                <span class="ml-2">{sortBy?.startsWith('revenue') ? (sortBy?.endsWith('desc') ? '▼' : '▲') : ''}</span>
+                            </th>
+                            <th
+                                class="px-6 py-4 text-right text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer select-none"
+                                onClick$={() => onSortChange$ && onSortChange$((sortBy === 'orders-desc') ? 'orders-asc' : 'orders-desc')}
+                            >
+                                Số Lần Xuất Hiện
+                                <span class="ml-2">{sortBy?.startsWith('orders') ? (sortBy?.endsWith('desc') ? '▼' : '▲') : ''}</span>
+                            </th>
                             <th class="px-6 py-4 text-center text-xs font-medium text-gray-500 uppercase tracking-wider">Chi Tiết</th>
                         </tr>
                     </thead>

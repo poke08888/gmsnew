@@ -24,6 +24,11 @@ export default component$(({partners, orderData, brands, users}: Props) => {
             </div>
 
             <div class="space-y-2">
+                <label class="block text-sm font-medium text-gray-700">Tên đơn (dành cho sales)</label>
+                <input type="text" value={orderData.value.name || ''} onInput$={(e:any) => { orderData.value = {...orderData.value, name: e.target.value } }} class="w-full rounded-lg border-gray-300 border p-3 focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition" />
+            </div>
+
+            <div class="space-y-2">
                 <label class="block text-sm font-medium text-gray-700">Kho / Điểm Giao Hàng</label>
                 <select 
                     value={orderData.value.warehouseId}

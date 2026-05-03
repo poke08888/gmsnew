@@ -39,7 +39,7 @@ const useCurrentUser = routeLoader$(async ({cookie, sharedMap}) => {
     return sharedMap.get('user') as InterfaceUser;
 })
 
-const useOrders = server$(async function(page: number, limit: number, search: { text: string, partnerId: string, userId: string, startDate: string, endDate: string }) {
+const useOrders = server$(async function(page: number, limit: number, search: { text: string, partnerId: string, userId: string, startDate: string, endDate: string, sortBy?: string }) {
     const session = this.sharedMap.get('session');
     if (!session) {
         return { orders: [], total: 0 };
@@ -58,7 +58,8 @@ const useOrders = server$(async function(page: number, limit: number, search: { 
     }
     if (search.text) {
         filterOperations.$or = [
-            { orderCode: { $regex: search.text, $options: 'i' } }
+            { orderCode: { $regex: search.text, $options: 'i' } },
+            { name: { $regex: search.text, $options: 'i' } }
         ]
     }
     // if (search.channelId && search.channelId != 'all') {
@@ -79,7 +80,17 @@ const useOrders = server$(async function(page: number, limit: number, search: { 
         // }
         filterOperations.orderDate.$lte = new Date(search.endDate)
     }
-    let orders = await Order.find(filterOperations, { __v: 0 }).populate('userId partnerId warehouseId billingId brandId').skip(skip).limit(limit) as any[];
+    // sort order mapping
+    let sort: any = { orderDate: -1 };
+    const sortBy = search.sortBy || 'orderDate-desc';
+    if (sortBy === 'orderDate-asc') sort = { orderDate: 1 };
+    else if (sortBy === 'orderDate-desc') sort = { orderDate: -1 };
+    else if (sortBy === 'deliveryDate-asc') sort = { deliveryDate: 1 };
+    else if (sortBy === 'deliveryDate-desc') sort = { deliveryDate: -1 };
+    else if (sortBy === 'revenue-asc') sort = { totalNetPrice: 1 };
+    else if (sortBy === 'revenue-desc') sort = { totalNetPrice: -1 };
+
+    let orders = await Order.find(filterOperations, { __v: 0 }).populate('userId partnerId warehouseId billingId brandId').skip(skip).limit(limit).sort(sort) as any[];
     orders = orders.map(order => order.toJSON()) as InterfaceOrder[];
     // console.log('filterOperations', filterOperations);
     const total = await Order.countDocuments(filterOperations);
@@ -91,7 +102,7 @@ export default component$(() => {
     const nav = useNavigate()
     const partners = usePartners()
     const users = useUsers()
-    const search = useStore<{ text: string, partnerId: string, userId: string, startDate: string, endDate: string }>({ text: '', partnerId: 'all', userId: 'all', startDate: '', endDate: '' }, {deep: true});
+    const search = useStore<{ text: string, partnerId: string, userId: string, startDate: string, endDate: string, sortBy?: string }>({ text: '', partnerId: 'all', userId: 'all', startDate: '', endDate: '', sortBy: 'orderDate-desc' }, {deep: true});
     const orders = useStore<{ orders: InterfaceOrder[], total: number }>({ orders: [], total: 0 });
     const page = useSignal(1);
     const limit = useSignal(10);
@@ -103,6 +114,7 @@ export default component$(() => {
         track(() => search.userId);
         track(() => search.startDate);
         track(() => search.endDate);
+        track(() => search.sortBy);
         track(() => page.value);
         track(() => limit.value);
         const ordersData = await useOrders(page.value, limit.value, search);
@@ -125,7 +137,7 @@ export default component$(() => {
 
             <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
                 <Filters search={search} partners={partners.value} users={users.value}/>
-                <OrderListTable currentUser={currentUser.value} ordersData={orders} orderAction={handleOrderAction}/>
+                <OrderListTable currentUser={currentUser.value} ordersData={orders} orderAction={handleOrderAction} sortBy={search.sortBy} onSortChange$={(s: string) => { search.sortBy = s; }} />
                 <Pagination total={orders.total} page={page} limit={limit} />
             </div>
             {handleOrderAction.action == "preview" && <InvoicePreview orderAction={handleOrderAction} />}

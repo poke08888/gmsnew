@@ -15,7 +15,7 @@ const useBrands = routeLoader$(async ({ sharedMap }) => {
     return await Brand.find({}).lean();
 })
 
-const GetOrdersAndPartners = server$(async function (brandId: string, timeRangeType: string, startDate: string, endDate: string) {
+const GetOrdersAndPartners = server$(async function (brandId: string, timeRangeType: string, startDate: string, endDate: string, sortBy: string = 'revenue-desc') {
     const session = this.sharedMap.get('session');
     if (!session) {
         return { success: false, error: 'Unauthorized' };
@@ -82,7 +82,7 @@ const GetOrdersAndPartners = server$(async function (brandId: string, timeRangeT
     }
     // assign permissions
 
-    return await Order.aggregate([
+    const pipeline: any[] = [
         { $match: matchQuery },
         {
             $group: {
@@ -130,7 +130,20 @@ const GetOrdersAndPartners = server$(async function (brandId: string, timeRangeT
                 preserveNullAndEmptyArrays: true
             }
         }
-    ])
+    ];
+
+    // Apply sorting stage according to sortBy
+    let sortStage: any = {};
+    if (sortBy === 'revenue-asc') sortStage = { totalNetValue: 1 };
+    else if (sortBy === 'revenue-desc') sortStage = { totalNetValue: -1 };
+    else if (sortBy === 'orders-asc') sortStage = { orderCount: 1 };
+    else if (sortBy === 'orders-desc') sortStage = { orderCount: -1 };
+
+    if (Object.keys(sortStage).length) {
+        pipeline.push({ $sort: sortStage });
+    }
+
+    return await Order.aggregate(pipeline);
 
 })
 
@@ -139,14 +152,14 @@ export default component$(() => {
     const nav = useNavigate();
 
     const brands = useBrands();
-    const filter = useStore({ brand: 'all', timeRangeType: 'today', startDate: '', endDate: '' });
+    const filter = useStore({ brand: 'all', timeRangeType: 'today', startDate: '', endDate: '', sortBy: 'revenue-desc' });
     const orderPartners = useSignal<any[]>([]);
     const currentPage = useSignal(1);
     const pageSize = useSignal(5);
     useTask$(async ({ track }) => {
-        track(() => [filter.brand, filter.timeRangeType, filter.startDate, filter.endDate]);
+        track(() => [filter.brand, filter.timeRangeType, filter.startDate, filter.endDate, filter.sortBy]);
         currentPage.value = 1;
-        const orders = await GetOrdersAndPartners(filter.brand, filter.timeRangeType, filter.startDate, filter.endDate)
+        const orders = await GetOrdersAndPartners(filter.brand, filter.timeRangeType, filter.startDate, filter.endDate, filter.sortBy)
         orderPartners.value = orders as any[];
         // console.log("Orders by Partners:", JSON.stringify(orders, null, 2));
     });
@@ -177,8 +190,20 @@ export default component$(() => {
                         <tr>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Tên Đối Tác</th>
                             <th class="px-6 py-4 text-left text-xs font-bold text-gray-500 uppercase tracking-wider">Kênh</th>
-                            <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Doanh Thu</th>
-                            <th class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider">Số Đơn</th>
+                            <th
+                                class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer select-none"
+                                onClick$={() => { filter.sortBy = filter.sortBy === 'revenue-desc' ? 'revenue-asc' : 'revenue-desc'; }}
+                            >
+                                Doanh Thu
+                                <span class="ml-2">{filter.sortBy?.startsWith('revenue') ? (filter.sortBy?.endsWith('desc') ? '▼' : '▲') : ''}</span>
+                            </th>
+                            <th
+                                class="px-6 py-4 text-right text-xs font-bold text-gray-500 uppercase tracking-wider cursor-pointer select-none"
+                                onClick$={() => { filter.sortBy = filter.sortBy === 'orders-desc' ? 'orders-asc' : 'orders-desc'; }}
+                            >
+                                Số Đơn
+                                <span class="ml-2">{filter.sortBy?.startsWith('orders') ? (filter.sortBy?.endsWith('desc') ? '▼' : '▲') : ''}</span>
+                            </th>
                             <th class="px-6 py-4 text-center text-xs font-bold text-gray-500 uppercase tracking-wider">Hành Động</th>
                         </tr>
                     </thead>

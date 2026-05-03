@@ -30,8 +30,8 @@ export default component$(({ orderAction }: Props) => {
              <p style="margin: 3px 0;"><strong>Tổng đài hỗ trợ:</strong> 1900 4628</p>
            </div>
            <div style="width: 30%; text-align: right;">
-             <p style="margin: 3px 0; font-size: 16px; font-weight: bold; color: #dc2626;">PHIẾU ĐẶT HÀNG</p>
-             <p style="margin: 3px 0; color: #6b7280;">Mã đơn: #${order.orderCode}</p>
+             <p style="margin: 3px 0; font-size: 16px; font-weight: bold; color: #4f46e5;">PHIẾU ĐẶT HÀNG</p>
+             <p style="margin: 3px 0; color: #6b7280;">${order.name ? `Tên: ${order.name}` : `Mã đơn: #${order.orderCode}`}</p>
              <p style="margin: 3px 0; color: #6b7280;">Ngày đặt: ${formatDate(order.orderDate.toDateString())}</p>
            </div>
         </div>
@@ -128,7 +128,7 @@ export default component$(({ orderAction }: Props) => {
         <div class="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
             <div class="bg-white rounded-xl shadow-2xl w-full max-w-4xl max-h-[90vh] flex flex-col overflow-hidden">
                 <div class="flex items-center justify-between p-4 border-b border-gray-200 bg-gray-50">
-                    <h3 class="font-bold text-gray-800 flex items-center gap-2">Phiếu Đặt Hàng: {orderAction.order?._id}</h3>
+                    <h3 class="font-bold text-gray-800 flex items-center gap-2">Phiếu Đặt Hàng: {orderAction.order?.name || orderAction.order?._id}</h3>
                     <div class="flex items-center gap-2">
                         <button onClick$={generatePDF} class="bg-indigo-600 text-white px-3 py-1.5 rounded-lg text-sm">Tải PDF</button>
                         <button onClick$={() => {orderAction.action = ''; orderAction.order = null}} class="text-gray-500 p-1.5 rounded-lg"><X class="w-5 h-5" /></button>

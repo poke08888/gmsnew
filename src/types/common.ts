@@ -92,6 +92,8 @@ export interface InterfaceOrder {
     totalGrossPrice?: number;
     billingId: InterfaceBilling | null | string;
     brandId: InterfaceBrand | null | string;
+    orderCode?: string;
+    name?: string;
     orderDate: Date;
     deliveryDate: Date;
     items: InterfaceOrderItem[];

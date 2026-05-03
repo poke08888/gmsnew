@@ -41,7 +41,7 @@ const useGlobalStats = server$(async function (timeRangeType: string, brand: str
   if (!user) {
     return { success: false, error: 'Unauthorized' };
   }
-  
+
 
   let isAdmin = user.role == EnumUserRole.DIRECTOR || user.customPermissions.includes(EnumUserCustomPermission.VIEW_ALL_DATA);
 
@@ -71,23 +71,30 @@ const useGlobalStats = server$(async function (timeRangeType: string, brand: str
     startOrderDate = startDate;
     endOrderDate = endDate;
   } else if (timeRangeType == 'today') {
-    startOrderDate = new Date(new Date().setHours(0, 0, 0, 0)).toISOString();
-    endOrderDate = new Date(new Date().setHours(23, 59, 59, 999)).toISOString();
+    const today = new Date();
+    const yyyy = today.getFullYear();
+    const mm = String(today.getMonth() + 1).padStart(2, '0');
+    const dd = String(today.getDate()).padStart(2, '0');
+
+    startOrderDate = `${yyyy}-${mm}-${dd}`;
+    endOrderDate = `${yyyy}-${mm}-${dd}`;
   } else if (timeRangeType == 'week') {
-    startOrderDate = new Date(new Date().setHours(0, 0, 0, 0) - ((new Date().getDay() || 7) - 1) * 86400000).toISOString();
-    endOrderDate = new Date(new Date(startOrderDate).getTime() + 7 * 86400000 - 1).toISOString();
+    startOrderDate = new Date(new Date().setHours(0, 0, 0, 0) - ((new Date().getDay() || 7) - 1) * 86400000).toISOString().slice(0,10);
+    endOrderDate = new Date(new Date(startOrderDate).getTime() + 7 * 86400000 - 1).toISOString().slice(0,10);
   }
   else if (timeRangeType == 'month') {
-    startOrderDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString();
-    endOrderDate = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999).toISOString();
+    startOrderDate = new Date(new Date().getFullYear(), new Date().getMonth(), 1).toISOString().slice(0,10);
+    endOrderDate = new Date(new Date().getFullYear(), new Date().getMonth() + 1, 0, 23, 59, 59, 999).toISOString().slice(0,10);
   }
   else if (timeRangeType == 'quarter') {
-    startOrderDate = new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3, 1).toISOString();
-    endOrderDate = new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3 + 3, 0, 23, 59, 59, 999).toISOString();
+    startOrderDate = new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3, 1).toISOString().slice(0,10);
+    endOrderDate = new Date(new Date().getFullYear(), Math.floor(new Date().getMonth() / 3) * 3 + 3, 0, 23, 59, 59, 999).toISOString().slice(0,10);
   } else if (timeRangeType == 'year') {
-    startOrderDate = new Date(new Date().getFullYear(), 0, 1).toISOString();
-    endOrderDate = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59, 999).toISOString();
+    startOrderDate = new Date(new Date().getFullYear(), 0, 1).toISOString().slice(0,10);
+    endOrderDate = new Date(new Date().getFullYear(), 11, 31, 23, 59, 59, 999).toISOString().slice(0,10);
   }
+
+  // console.log("Filter for orders:", { startOrderDate, endOrderDate, brand, partners, isAdmin, assignedChannels: user.assignedChannels, assignedBrands: user.assignedBrands });
 
   const channelStats = await Order.aggregate([
     {
