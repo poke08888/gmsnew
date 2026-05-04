@@ -39,7 +39,7 @@ export default component$(({ orderAction }: Props) => {
            </div>
            <div style="width: 30%; text-align: right;">
              <p style="margin: 3px 0; font-size: 16px; font-weight: bold; color: #4f46e5;">HÓA ĐƠN</p>
-             <p style="margin: 3px 0; color: #6b7280;">${order.name ? `Tên: ${order.name}` : `Mã đơn: #${order.orderCode}`}</p>
+             <p style="margin: 3px 0; color: #6b7280;">Mã đơn: #${order.orderCode}</p>
              <p style="margin: 3px 0; color: #6b7280;">Ngày đặt: ${formatDate(order.orderDate.toDateString())}</p>
            </div>
         </div>
