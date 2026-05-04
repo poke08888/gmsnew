@@ -93,7 +93,6 @@ export interface InterfaceOrder {
     billingId: InterfaceBilling | null | string;
     brandId: InterfaceBrand | null | string;
     orderCode?: string;
-    name?: string;
     orderDate: Date;
     deliveryDate: Date;
     items: InterfaceOrderItem[];

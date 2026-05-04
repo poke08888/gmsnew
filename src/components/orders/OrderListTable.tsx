@@ -76,7 +76,7 @@ export default component$(({ ordersData, currentUser, orderAction, sortBy, onSor
                 <tbody class="bg-white divide-y divide-gray-200">
                     {ordersData.orders.map(order => (
                         <tr key={order._id}>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">{order.name ? order.name : (order.orderCode || order._id)}</td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm font-bold text-indigo-600">{order.orderCode || order._id}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{Intl.DateTimeFormat('en-US').format(new Date(order.orderDate))}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700">{Intl.DateTimeFormat('en-US').format(new Date(order.deliveryDate))}</td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-700 font-medium">{typeof order.partnerId === 'string' ? order.partnerId : order.partnerId?.name || ""}</td>

@@ -99,7 +99,13 @@ const addOrder = server$(async function (orderData: InterfaceOrder) {
         }
 
         const newOrder = new Order({
-            ...orderData,
+            partnerId: orderData.partnerId,
+            warehouseId: orderData.warehouseId,
+            billingId: orderData.billingId,
+            brandId: orderData.brandId,
+            orderDate: orderData.orderDate,
+            deliveryDate: orderData.deliveryDate,
+            items: orderData.items || [],
             userId: orderData.userId,
             orderCode: orderCode
         })
@@ -127,7 +133,7 @@ const addOrder = server$(async function (orderData: InterfaceOrder) {
 
 export default component$(() => {
     const error = useSignal('');
-    const orderData = useSignal({partnerId: '', warehouseId: '', billingId: '', brandId: '', userId: '', name: '', orderDate: '', deliveryDate: '', items: []});
+    const orderData = useSignal({partnerId: '', warehouseId: '', billingId: '', brandId: '', userId: '', orderDate: '', deliveryDate: '', items: []});
     const partners = usePartners();
     const brands = useBrands();
     const users = useUsers();
@@ -144,7 +150,6 @@ export default component$(() => {
             warehouseId: orderData.value.warehouseId,
             billingId: orderData.value.billingId,
             brandId: orderData.value.brandId,
-            name: orderData.value.name,
             orderDate: new Date(orderData.value.orderDate),
             deliveryDate: new Date(orderData.value.deliveryDate),
             items: file.value.items,
@@ -156,7 +161,7 @@ export default component$(() => {
             return;
         }
         alert('Đơn hàng đã được thêm thành công!');
-        orderData.value = {name: "", partnerId: '', warehouseId: '', billingId: '', brandId: '', userId: '', orderDate: '', deliveryDate: '', items: []};
+        orderData.value = {partnerId: '', warehouseId: '', billingId: '', brandId: '', userId: '', orderDate: '', deliveryDate: '', items: []};
         file.value = {items: [], rawFile: null};
     })
 

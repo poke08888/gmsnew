@@ -58,8 +58,7 @@ const useOrders = server$(async function(page: number, limit: number, search: { 
     }
     if (search.text) {
         filterOperations.$or = [
-            { orderCode: { $regex: search.text, $options: 'i' } },
-            { name: { $regex: search.text, $options: 'i' } }
+            { orderCode: { $regex: search.text, $options: 'i' } }
         ]
     }
     // if (search.channelId && search.channelId != 'all') {
