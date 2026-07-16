@@ -20,3 +20,4 @@ revenue + channel-KPI report to the Telegram group **BM+ Nonelab** on every new 
 - Per-order and cumulative revenue shown as both Net and Gross.
 - Only `insert` events trigger a message; updates/deletes are ignored.
 - The change stream is resumable via a token persisted in `.state/resume-token.json`.
+- Delivery is best-effort at-least-once: if the process restarts between sending and saving the resume token, an order near the restart may produce a duplicate message.

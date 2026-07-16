@@ -1,4 +1,4 @@
-import { orderList, isCurrentPeriod, periodRangeVN, kpiProgress } from './revenue.js';
+import { isCurrentPeriod, periodRangeVN, kpiProgress } from './revenue.js';
 
 const netGrossFields = {
   net: { $sum: { $map: { input: '$items', as: 'i', in: { $multiply: ['$$i.netprice', '$$i.qty'] } } } },

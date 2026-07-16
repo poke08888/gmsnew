@@ -33,11 +33,12 @@ export async function runWatcher({ db, store, onInsert, logger = console }) {
     const options = { fullDocument: 'default' };
     if (resumeAfter) options.resumeAfter = resumeAfter;
 
-    const stream = db.collection('orders').watch(
-      [{ $match: { operationType: 'insert' } }],
-      options,
-    );
+    let stream;
     try {
+      stream = db.collection('orders').watch(
+        [{ $match: { operationType: 'insert' } }],
+        options,
+      );
       for await (const change of stream) {
         try {
           await onInsert(change.fullDocument);
@@ -54,7 +55,7 @@ export async function runWatcher({ db, store, onInsert, logger = console }) {
       }
       await sleep(5000);
     } finally {
-      await stream.close().catch(() => {});
+      if (stream) await stream.close().catch(() => {});
     }
   }
 }
