@@ -29,7 +29,7 @@ export function formatDateTimeVN(date) {
 }
 
 function progressBar(progress) {
-  const filled = Math.round((Math.min(100, progress) / 100) * 10);
+  const filled = Math.round((Math.max(0, Math.min(100, progress)) / 100) * 10);
   return '█'.repeat(filled) + '░'.repeat(10 - filled);
 }
 

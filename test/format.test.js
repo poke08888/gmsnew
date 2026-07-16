@@ -53,3 +53,16 @@ test('buildMessage shows placeholder when no channel KPIs', () => {
   const msg = buildMessage({ ...data, kpis: [] });
   assert.match(msg, /Chưa đặt KPI/);
 });
+
+test('buildMessage handles negative KPI progress without throwing', () => {
+  const d = {
+    orderCode: 'X', brandName: 'B', channelName: 'C', partnerName: 'P', userName: 'U',
+    createdAt: new Date('2026-07-16T04:21:09Z'), itemCount: 1, unitCount: 1,
+    orderNet: 0, orderGross: 0, today: { net: 0, gross: 0 }, month: { net: 0, gross: 0 },
+    monthLabel: '07/2026',
+    kpis: [{ channelName: 'C', progress: -20, currentValue: -5, amount: 10, isOrderChannel: false }],
+  };
+  let msg;
+  assert.doesNotThrow(() => { msg = buildMessage(d); });
+  assert.match(msg, /░░░░░░░░░░/); // fully empty bar, no crash
+});
