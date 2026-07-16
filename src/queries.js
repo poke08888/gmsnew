@@ -1,8 +1,10 @@
 import { isCurrentPeriod, periodRangeVN, kpiProgress } from './revenue.js';
 
-const netGrossFields = {
+// "Doanh thu" = netprice (sau CK), "Trước CK" = listprice — same rule as the GMS dashboard
+// (GlobalStats: TỔNG DOANH THU = totalNetRevenue, TRƯỚC CHIẾT KHẤU = totalListRevenue).
+const netListFields = {
   net: { $sum: { $map: { input: '$items', as: 'i', in: { $multiply: ['$$i.netprice', '$$i.qty'] } } } },
-  gross: { $sum: { $map: { input: '$items', as: 'i', in: { $multiply: ['$$i.grossprice', '$$i.qty'] } } } },
+  list: { $sum: { $map: { input: '$items', as: 'i', in: { $multiply: ['$$i.listprice', '$$i.qty'] } } } },
 };
 
 export async function fetchOrderContext(db, order) {
@@ -27,10 +29,10 @@ export async function fetchOrderContext(db, order) {
 export async function cumulativeByCreatedAt(db, range) {
   const agg = await db.collection('orders').aggregate([
     { $match: { createdAt: { $gte: range.start, $lte: range.end } } },
-    { $addFields: netGrossFields },
-    { $group: { _id: null, net: { $sum: '$net' }, gross: { $sum: '$gross' } } },
+    { $addFields: netListFields },
+    { $group: { _id: null, net: { $sum: '$net' }, list: { $sum: '$list' } } },
   ]).toArray();
-  return { net: agg[0]?.net || 0, gross: agg[0]?.gross || 0 };
+  return { net: agg[0]?.net || 0, list: agg[0]?.list || 0 };
 }
 
 export async function channelKpiProgress(db, now, orderChannelId) {

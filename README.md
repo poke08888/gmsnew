@@ -17,7 +17,7 @@ revenue + channel-KPI report to the Telegram group **BM+ Nonelab** on every new 
 ## Behavior notes
 - Cumulative today/month totals use `createdAt` (Asia/Ho_Chi_Minh time).
 - KPI progress uses `orderDate` + `listprice × qty` to match the GMS dashboard.
-- Per-order and cumulative revenue shown as both Net and Gross.
+- Per-order and cumulative revenue shown as "Doanh thu" (netprice, sau CK) and "Trước CK" (listprice) — same rule as the GMS dashboard.
 - Only `insert` events trigger a message; updates/deletes are ignored.
 - The change stream is resumable via a token persisted in `.state/resume-token.json`.
 - Delivery is best-effort at-least-once: if the process restarts between sending and saving the resume token, an order near the restart may produce a duplicate message.

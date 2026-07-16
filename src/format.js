@@ -40,11 +40,11 @@ export function buildMessage(d) {
   lines.push(`👤 NV: ${escapeHtml(d.userName)} · 🕒 ${formatDateTimeVN(d.createdAt)}`);
   lines.push('');
   lines.push(`📦 ${d.itemCount} mặt hàng · ${d.unitCount} sản phẩm`);
-  lines.push(`💵 Doanh thu đơn: Net <b>${formatVND(d.orderNet)}</b> · Gross <b>${formatVND(d.orderGross)}</b>`);
+  lines.push(`💵 Doanh thu đơn: <b>${formatVND(d.orderNet)}</b> · Trước CK: <b>${formatVND(d.orderList)}</b>`);
   lines.push('');
   lines.push('📈 <b>Luỹ kế theo ngày tạo đơn (giờ VN)</b>');
-  lines.push(`• Hôm nay: Net ${formatVND(d.today.net)} · Gross ${formatVND(d.today.gross)}`);
-  lines.push(`• Tháng ${d.monthLabel}: Net ${formatVND(d.month.net)} · Gross ${formatVND(d.month.gross)}`);
+  lines.push(`• Hôm nay: ${formatVND(d.today.net)} · Trước CK: ${formatVND(d.today.list)}`);
+  lines.push(`• Tháng ${d.monthLabel}: ${formatVND(d.month.net)} · Trước CK: ${formatVND(d.month.list)}`);
   lines.push('');
   lines.push(`🎯 <b>Tiến độ KPI kênh — tháng ${d.monthLabel}</b>`);
   if (!d.kpis || d.kpis.length === 0) {

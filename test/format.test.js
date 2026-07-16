@@ -27,9 +27,9 @@ const data = {
   orderCode: 'Menow20260716852282',
   brandName: 'Menow', channelName: 'TikTok Shop', partnerName: 'ABC & Co',
   userName: 'Nguyễn Văn A', createdAt: new Date('2026-07-16T04:21:09Z'),
-  itemCount: 2, unitCount: 4, orderNet: 190388, orderGross: 205619.04,
-  today: { net: 190388, gross: 205619.04 },
-  month: { net: 5_000_000, gross: 5_400_000 },
+  itemCount: 2, unitCount: 4, orderNet: 190388, orderList: 298000,
+  today: { net: 190388, list: 298000 },
+  month: { net: 5_000_000, list: 6_100_000 },
   monthLabel: '07/2026',
   kpis: [
     { channelName: 'TikTok Shop', progress: 65, currentValue: 1_950_000_000, amount: 3_000_000_000, isOrderChannel: true },
@@ -41,8 +41,10 @@ test('buildMessage includes order code, escaped partner, both revenues, and KPI 
   const msg = buildMessage(data);
   assert.match(msg, /Menow20260716852282/);
   assert.match(msg, /ABC &amp; Co/);            // HTML-escaped
-  assert.match(msg, /190\.388đ/);               // net
-  assert.match(msg, /205\.619đ/);               // gross
+  assert.match(msg, /Doanh thu đơn: <b>190\.388đ<\/b>/);   // doanh thu = net
+  assert.match(msg, /Trước CK: <b>298\.000đ<\/b>/);        // trước chiết khấu = listprice
+  assert.match(msg, /6\.100\.000đ/);            // month list cumulative
+  assert.doesNotMatch(msg, /Gross|Net /);       // old labels gone
   assert.match(msg, /07\/2026/);                // month label
   assert.match(msg, /⭐/);                       // order-channel marker
   assert.match(msg, /TikTok Shop/);
@@ -58,7 +60,7 @@ test('buildMessage handles negative KPI progress without throwing', () => {
   const d = {
     orderCode: 'X', brandName: 'B', channelName: 'C', partnerName: 'P', userName: 'U',
     createdAt: new Date('2026-07-16T04:21:09Z'), itemCount: 1, unitCount: 1,
-    orderNet: 0, orderGross: 0, today: { net: 0, gross: 0 }, month: { net: 0, gross: 0 },
+    orderNet: 0, orderList: 0, today: { net: 0, list: 0 }, month: { net: 0, list: 0 },
     monthLabel: '07/2026',
     kpis: [{ channelName: 'C', progress: -20, currentValue: -5, amount: 10, isOrderChannel: false }],
   };

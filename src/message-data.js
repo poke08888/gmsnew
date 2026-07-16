@@ -1,5 +1,5 @@
 import { fetchOrderContext, cumulativeByCreatedAt, channelKpiProgress } from './queries.js';
-import { orderNet, orderGross, dayRangeVN, monthRangeVN, vnMonthLabel } from './revenue.js';
+import { orderNet, orderList, dayRangeVN, monthRangeVN, vnMonthLabel } from './revenue.js';
 
 export async function buildOrderMessageData(db, order, now) {
   const ctx = await fetchOrderContext(db, order);
@@ -19,7 +19,7 @@ export async function buildOrderMessageData(db, order, now) {
     itemCount: items.length,
     unitCount: items.reduce((t, i) => t + (i.qty || 0), 0),
     orderNet: orderNet(order),
-    orderGross: orderGross(order),
+    orderList: orderList(order),
     today,
     month,
     monthLabel: vnMonthLabel(now),
